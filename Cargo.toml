@@ -32,11 +32,9 @@ derive-new = "0.7.0"
 
 [dependencies]
 api.workspace = true
-kernel.workspace = true
 adapter.workspace = true
 shared.workspace = true
 registry.workspace = true
 anyhow.workspace = true
 axum.workspace = true
-sqlx.workspace = true
 tokio.workspace = true

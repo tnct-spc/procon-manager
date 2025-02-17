@@ -17,26 +17,28 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable
+      - uses: cachix/install-nix-action@v30
 
-      - name: Install cargo-related tools
-        uses: taiki-e/install-action@v2
+      - uses: cachix/cachix-action@v15
         with:
-          tool: nextest,cargo-make,cargo-machete
+          name: yadokani389
 
-      - name: Tests compile
-        run: cargo make test-ci --no-run --locked
+      - name: enable direnv
+        run: echo "use flake" > .envrc
+
+      - uses: aldoborrero/direnv-nix-action@v2
+        with:
+          use_nix_profile: true
+          nix_channel: nixpkgs
 
       - name: Test
         run: cargo make test-ci
 
       - name: Clippy
-        run: cargo make clippy-ci -- -Dwarnings
+        run: cargo clippy --all --all-targets -- -Dwarnings
 
       - name: Rustfmt
-        run: cargo make fmt -- --check
+        run: cargo fmt --all --check
 
       - name: Check unused dependencies
-        run: cargo machete
+        run: nix run nixpkgs#cargo-machete

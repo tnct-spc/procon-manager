@@ -82,6 +82,8 @@
               rust-bin.stable.latest.default
               cargo-make
               cargo-nextest
+              sqlx-cli
+              process-compose
             ];
 
             DATABASE_URL = "postgresql://localhost:5432/app?user=app&password=passwd";
