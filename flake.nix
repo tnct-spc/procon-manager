@@ -83,6 +83,8 @@
               cargo-make
               cargo-nextest
             ];
+
+            DATABASE_URL = "postgresql://localhost:5432/app?user=app&password=passwd";
           };
 
           treefmt = {
@@ -141,11 +143,13 @@
                   enable = true;
                   port = dbPort;
                   initialScript.before = ''
-                    DROP USER IF EXISTS ${dbUser};
-                    DROP DATABASE IF EXISTS ${dbName};
-                    CREATE USER ${dbUser} PASSWORD '${dbPassword}' CREATEDB;
-                    CREATE DATABASE ${dbName} OWNER ${dbUser};
+                    CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
                   '';
+                  initialDatabases = [
+                    {
+                      name = dbName;
+                    }
+                  ];
                 };
                 redis."r1" = {
                   enable = true;
@@ -171,11 +175,13 @@
                   enable = true;
                   port = dbPort;
                   initialScript.before = ''
-                    DROP USER IF EXISTS ${dbUser};
-                    DROP DATABASE IF EXISTS ${dbName};
-                    CREATE USER ${dbUser} PASSWORD '${dbPassword}' CREATEDB;
-                    CREATE DATABASE ${dbName} OWNER ${dbUser};
+                    CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
                   '';
+                  initialDatabases = [
+                    {
+                      name = dbName;
+                    }
+                  ];
                 };
                 redis."r1" = {
                   enable = true;
