@@ -60,12 +60,12 @@
                 );
               };
 
-            useFetchCargoVendor = true;
-            cargoHash = "sha256-087sUuiG/jqpQKqFNY2R+c2oxBHSqYfXk1nVjdqJKY4=";
+            cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = ./Cargo.lock; };
 
             doCheck = false;
 
             meta = {
+              mainProgram = "app";
             };
           };
 
