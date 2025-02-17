@@ -153,6 +153,36 @@
                 };
               };
             };
+
+          process-compose."dev" =
+            let
+              dbName = "app";
+              dbUser = "app";
+              dbPassword = "passwd";
+              dbPort = 5432;
+            in
+            {
+              imports = [
+                inputs.services-flake.processComposeModules.default
+              ];
+
+              services = {
+                postgres."pg1" = {
+                  enable = true;
+                  port = dbPort;
+                  initialScript.before = ''
+                    DROP USER IF EXISTS ${dbUser};
+                    DROP DATABASE IF EXISTS ${dbName};
+                    CREATE USER ${dbUser} PASSWORD '${dbPassword}' CREATEDB;
+                    CREATE DATABASE ${dbName} OWNER ${dbUser};
+                  '';
+                };
+                redis."r1" = {
+                  enable = true;
+                  port = 6379;
+                };
+              };
+            };
         };
     };
 }
