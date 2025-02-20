@@ -22,7 +22,7 @@ JAEGER_PORT = 6831
 
 
 [tasks.before-build]
-run_task = [{ name = ["compose-up"] }]
+run_task = [{ name = ["compose-up", "migrate"] }]
 
 [tasks.run]
 dependencies = ["before-build"]

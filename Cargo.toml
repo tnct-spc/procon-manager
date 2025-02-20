@@ -29,6 +29,14 @@ sqlx = { version = "0.8.3", features = [
 tokio = { version = "1.43.0", features = ["full"] }
 async-trait = "0.1.86"
 derive-new = "0.7.0"
+serde = { version = "1.0.217", features = ["derive"] }
+uuid = { version = "1.13.1", features = ["serde", "v4"] }
+thiserror = "2.0.11"
+strum = { version = "0.27.1", features = ["derive"] }
+tracing = { version = "0.1.41", features = ["log"] }
+bcrypt = "0.17.0"
+redis = "0.29.0"
+garde = "0.22.0"
 
 [dependencies]
 api.workspace = true
@@ -38,3 +46,6 @@ registry.workspace = true
 anyhow.workspace = true
 axum.workspace = true
 tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
+tower-http = { version = "0.6.2", features = ["cors", "trace"] }

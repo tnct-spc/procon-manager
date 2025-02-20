@@ -5,3 +5,12 @@ edition = "2021"
 
 [dependencies]
 anyhow.workspace = true
+axum.workspace = true
+sqlx.workspace = true
+uuid.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+redis.workspace = true
+bcrypt.workspace = true
+garde.workspace = true
+tracing.workspace = true
