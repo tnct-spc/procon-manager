@@ -15,7 +15,7 @@ JAEGER_PORT = 6831
 
 
 [tasks.before-build]
-run_task = [{ name = ["compose-up"] }]
+run_task = [{ name = ["compose-up", "migrate"] }]
 
 [tasks.run]
 dependencies = ["before-build"]
@@ -49,6 +49,14 @@ args = [
 [tasks.test-ci]
 dependencies = ["before-build"]
 run_task = "test"
+
+[tasks.migrate]
+script = '''
+#!/usr/bin/env bash
+until sqlx migrate run --source adapter/migrations; do
+    sleep 1
+done
+'''
 
 [tasks.psql]
 command = "psql"

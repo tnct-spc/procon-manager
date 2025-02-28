@@ -14,7 +14,6 @@ dependencies = [
  "redis",
  "shared",
  "sqlx",
- "uuid",
 ]
 
 [[package]]
@@ -81,7 +80,6 @@ dependencies = [
  "serde",
  "shared",
  "strum",
- "uuid",
 ]
 
 [[package]]

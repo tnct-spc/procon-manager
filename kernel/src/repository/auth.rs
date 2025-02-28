@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use shared::error::AppResult;
 
 use crate::model::{
-    auth::{event::CreateToken, AccessToken},
+    auth::{AccessToken, event::CreateToken},
     id::UserId,
 };
 

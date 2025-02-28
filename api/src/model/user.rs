@@ -4,8 +4,8 @@ use kernel::model::{
     id::UserId,
     role::Role,
     user::{
-        event::{CreateUser, UpdateUserPassword, UpdateUserRole},
         User,
+        event::{CreateUser, UpdateUserPassword, UpdateUserRole},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -118,5 +118,19 @@ impl From<UpdateUserRoleRequestWithUserId> for UpdateUserRole {
             user_id: value.0,
             role: value.1.role.into(),
         }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BookOwner {
+    pub id: UserId,
+    pub name: String,
+}
+
+impl From<kernel::model::user::BookOwner> for BookOwner {
+    fn from(value: kernel::model::user::BookOwner) -> Self {
+        let kernel::model::user::BookOwner { id, name } = value;
+        Self { id, name }
     }
 }

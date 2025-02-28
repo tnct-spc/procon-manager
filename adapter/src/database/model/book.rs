@@ -1,22 +1,36 @@
-use kernel::model::book::Book;
-use uuid::Uuid;
+use kernel::model::{
+    book::Book,
+    id::{BookId, UserId},
+    user::BookOwner,
+};
 
 pub struct BookRow {
-    pub book_id: Uuid,
+    pub book_id: BookId,
     pub title: String,
     pub author: String,
     pub isbn: String,
     pub description: String,
+    pub owned_by: UserId,
+    pub owner_name: String,
 }
 
 impl From<BookRow> for Book {
-    fn from(row: BookRow) -> Self {
+    fn from(value: BookRow) -> Self {
         Self {
-            id: row.book_id,
-            title: row.title,
-            author: row.author,
-            isbn: row.isbn,
-            description: row.description,
+            id: value.book_id,
+            title: value.title,
+            author: value.author,
+            isbn: value.isbn,
+            description: value.description,
+            owner: BookOwner {
+                id: value.owned_by,
+                name: value.owner_name,
+            },
         }
     }
+}
+
+pub struct PaginatedBookRow {
+    pub total: i64,
+    pub id: BookId,
 }

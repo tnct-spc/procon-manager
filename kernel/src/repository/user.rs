@@ -1,8 +1,8 @@
 use crate::model::{
     id::UserId,
     user::{
-        event::{CreateUser, DeleteUser, UpdateUserPassword, UpdateUserRole},
         User,
+        event::{CreateUser, DeleteUser, UpdateUserPassword, UpdateUserRole},
     },
 };
 use async_trait::async_trait;

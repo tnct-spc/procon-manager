@@ -2,7 +2,7 @@ use shared::error::{AppError, AppResult};
 use std::str::FromStr;
 
 use kernel::model::{
-    auth::{event::CreateToken, AccessToken},
+    auth::{AccessToken, event::CreateToken},
     id::UserId,
 };
 

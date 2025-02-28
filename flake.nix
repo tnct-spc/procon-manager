@@ -45,12 +45,7 @@
               initialScript.before = ''
                 CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
               '';
-              initialDatabases = [
-                {
-                  name = dbName;
-                  schemas = [ ./db/schemas.sql ];
-                }
-              ];
+              initialDatabases = [ { name = dbName; } ];
               listen_addresses = ""; # disable listening via TCP
               socketDir = "data";
             };
@@ -121,6 +116,7 @@
             programs = {
               nixfmt.enable = true;
               rustfmt.enable = true;
+              rustfmt.edition = "2024";
             };
 
             settings.formatter = { };

@@ -1,7 +1,7 @@
 use crate::{
     database::{
-        model::auth::{from, AuthorizationKey, AuthorizedUserId, UserItem},
         ConnectionPool,
+        model::auth::{AuthorizationKey, AuthorizedUserId, UserItem, from},
     },
     redis::RedisClient,
 };
@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use derive_new::new;
 use kernel::{
     model::{
-        auth::{event::CreateToken, AccessToken},
+        auth::{AccessToken, event::CreateToken},
         id::UserId,
     },
     repository::auth::AuthRepository,
