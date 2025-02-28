@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
+use adapter::redis::RedisClient;
 use anyhow::Context;
-use api::route::{book::build_book_routers, health::build_health_check_routers};
+use api::route::{auth, v1};
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
@@ -36,10 +39,11 @@ fn init_logger() -> anyhow::Result<()> {
 async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
     let pool = adapter::database::connect_database_with(&app_config.database);
-    let registry = registry::AppRegistry::new(pool);
+    let kv = Arc::new(RedisClient::new(&app_config.redis)?);
+    let registry = registry::AppRegistry::new(pool, kv, app_config);
     let app = axum::Router::new()
-        .merge(build_health_check_routers())
-        .merge(build_book_routers())
+        .merge(v1::routes())
+        .merge(auth::routes())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))

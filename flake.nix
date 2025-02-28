@@ -35,6 +35,31 @@
           system,
           ...
         }:
+        let
+          dbName = "app";
+          dbUser = "app";
+          dbPassword = "passwd";
+          services = {
+            postgres."pg1" = {
+              enable = true;
+              initialScript.before = ''
+                CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
+              '';
+              initialDatabases = [
+                {
+                  name = dbName;
+                  schemas = [ ./db/schemas.sql ];
+                }
+              ];
+              listen_addresses = ""; # disable listening via TCP
+              socketDir = "data";
+            };
+            redis."r1" = {
+              enable = true;
+              port = 6379;
+            };
+          };
+        in
         {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
@@ -86,7 +111,9 @@
               process-compose
             ];
 
-            DATABASE_URL = "postgresql://localhost:5432/app?user=app&password=passwd";
+            shellHook = ''
+              export DATABASE_URL="postgresql:///app?host=$(pwd)/data&user=app&password=passwd"
+            '';
           };
 
           treefmt = {
@@ -104,7 +131,6 @@
             settings = {
               hooks = {
                 ripsecrets.enable = true;
-                cargo-check.enable = true;
                 clippy = {
                   enable = true;
                   packageOverrides.cargo = pkgs.rust-bin.stable.latest.default;
@@ -116,81 +142,33 @@
             };
           };
 
-          process-compose."app" =
-            let
-              dbName = "app";
-              dbUser = "app";
-              dbPassword = "passwd";
-              dbPort = 5432;
-            in
-            {
-              imports = [
-                inputs.services-flake.processComposeModules.default
-              ];
+          process-compose."app" = {
+            imports = [
+              inputs.services-flake.processComposeModules.default
+            ];
 
-              settings = {
-                processes = {
-                  backend-server = {
-                    command = pkgs.lib.getExe config.packages.rusty-book-manager;
-                    depends_on = {
-                      "pg1".condition = "process_healthy";
-                      "r1".condition = "process_healthy";
-                    };
+            settings = {
+              processes = {
+                backend-server = {
+                  command = pkgs.lib.getExe config.packages.rusty-book-manager;
+                  depends_on = {
+                    "pg1".condition = "process_healthy";
+                    "r1".condition = "process_healthy";
                   };
                 };
               };
-
-              services = {
-                postgres."pg1" = {
-                  enable = true;
-                  port = dbPort;
-                  initialScript.before = ''
-                    CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
-                  '';
-                  initialDatabases = [
-                    {
-                      name = dbName;
-                    }
-                  ];
-                };
-                redis."r1" = {
-                  enable = true;
-                  port = 6379;
-                };
-              };
             };
 
-          process-compose."dev" =
-            let
-              dbName = "app";
-              dbUser = "app";
-              dbPassword = "passwd";
-              dbPort = 5432;
-            in
-            {
-              imports = [
-                inputs.services-flake.processComposeModules.default
-              ];
+            inherit services;
+          };
 
-              services = {
-                postgres."pg1" = {
-                  enable = true;
-                  port = dbPort;
-                  initialScript.before = ''
-                    CREATE USER ${dbUser} SUPERUSER PASSWORD '${dbPassword}' CREATEDB;
-                  '';
-                  initialDatabases = [
-                    {
-                      name = dbName;
-                    }
-                  ];
-                };
-                redis."r1" = {
-                  enable = true;
-                  port = 6379;
-                };
-              };
-            };
+          process-compose."dev" = {
+            imports = [
+              inputs.services-flake.processComposeModules.default
+            ];
+
+            inherit services;
+          };
         };
     };
 }

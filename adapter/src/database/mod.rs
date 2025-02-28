@@ -1,5 +1,8 @@
 use derive_new::new;
-use shared::config::DatabaseConfig;
+use shared::{
+    config::DatabaseConfig,
+    error::{AppError, AppResult},
+};
 use sqlx::postgres::PgConnectOptions;
 
 pub mod model;
@@ -7,7 +10,7 @@ pub mod model;
 fn make_pg_connect_options(cfg: &DatabaseConfig) -> PgConnectOptions {
     PgConnectOptions::new()
         .host(&cfg.host)
-        .port(cfg.port)
+        // .port(cfg.port)
         .username(&cfg.username)
         .password(&cfg.password)
         .database(&cfg.database)
@@ -19,6 +22,10 @@ pub struct ConnectionPool(sqlx::PgPool);
 impl ConnectionPool {
     pub fn inner_ref(&self) -> &sqlx::PgPool {
         &self.0
+    }
+
+    pub async fn begin(&self) -> AppResult<sqlx::Transaction<'_, sqlx::Postgres>> {
+        self.0.begin().await.map_err(AppError::TransactionError)
     }
 }
 
