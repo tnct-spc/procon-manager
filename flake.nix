@@ -61,33 +61,43 @@
             overlays = [ inputs.rust-overlay.overlays.default ];
           };
 
-          packages.rusty-book-manager = pkgs.rustPlatform.buildRustPackage {
-            pname = "rusty-book-manager";
-            version = "0.1.0";
-
-            src =
-              let
-                fs = pkgs.lib.fileset;
-              in
-              fs.toSource {
-                root = ./.;
-                fileset = fs.difference ./. (
-                  fs.unions [
-                    (fs.maybeMissing ./result)
-                    ./flake.nix
-                    ./flake.lock
-                  ]
-                );
+          packages.rusty-book-manager =
+            let
+              toolchain = pkgs.rust-bin.stable.latest.default;
+              rustPlatform = pkgs.makeRustPlatform {
+                cargo = toolchain;
+                rustc = toolchain;
               };
+            in
+            rustPlatform.buildRustPackage {
+              pname = "rusty-book-manager";
+              version = "0.1.0";
 
-            cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = ./Cargo.lock; };
+              src =
+                let
+                  fs = pkgs.lib.fileset;
+                in
+                fs.toSource {
+                  root = ./.;
+                  fileset = fs.difference ./. (
+                    fs.unions [
+                      (fs.maybeMissing ./result)
+                      ./flake.nix
+                      ./flake.lock
+                    ]
+                  );
+                };
 
-            doCheck = false;
+              cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = ./Cargo.lock; };
 
-            meta = {
-              mainProgram = "app";
+              doCheck = false;
+
+              SQLX_OFFLINE = true;
+
+              meta = {
+                mainProgram = "app";
+              };
             };
-          };
 
           packages.default = config.packages.rusty-book-manager;
 
