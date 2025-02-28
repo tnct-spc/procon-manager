@@ -33,7 +33,7 @@ impl BookRepository for BookRepositoryImpl {
             event.author,
             event.isbn,
             event.description,
-            user_id as _
+            user_id.raw()
         )
         .execute(self.db.inner_ref())
         .await
@@ -112,7 +112,7 @@ impl BookRepository for BookRepositoryImpl {
                 INNER JOIN users AS u USING(user_id)
                 WHERE b.book_id = $1
             "#,
-            book_id as _
+            book_id.raw()
         )
         .fetch_optional(self.db.inner_ref())
         .await
@@ -137,8 +137,8 @@ impl BookRepository for BookRepositoryImpl {
             event.author,
             event.isbn,
             event.description,
-            event.book_id as _,
-            event.requested_user as _
+            event.book_id.raw(),
+            event.requested_user.raw()
         )
         .execute(self.db.inner_ref())
         .await
@@ -157,8 +157,8 @@ impl BookRepository for BookRepositoryImpl {
                 WHERE book_id = $1
                 AND user_id = $2
             "#,
-            event.book_id as _,
-            event.requested_user as _
+            event.book_id.raw(),
+            event.requested_user.raw()
         )
         .execute(self.db.inner_ref())
         .await
