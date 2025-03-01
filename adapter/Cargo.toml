@@ -12,3 +12,4 @@ async-trait.workspace = true
 derive-new.workspace = true
 redis.workspace = true
 bcrypt.workspace = true
+chrono.workspace = true
