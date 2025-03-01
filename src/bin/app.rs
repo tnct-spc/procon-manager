@@ -49,7 +49,7 @@ async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
     let pool = adapter::database::connect_database_with(&app_config.database);
     let kv = Arc::new(RedisClient::new(&app_config.redis)?);
-    let registry = registry::AppRegistry::new(pool, kv, app_config);
+    let registry = Arc::new(registry::AppRegistryImpl::new(pool, kv, app_config));
     let app = axum::Router::new()
         .merge(v1::routes())
         .merge(auth::routes())

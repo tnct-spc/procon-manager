@@ -7,3 +7,4 @@ edition = "2024"
 adapter.workspace = true
 shared.workspace = true
 kernel.workspace = true
+mockall.workspace = true

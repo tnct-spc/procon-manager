@@ -121,7 +121,7 @@ impl From<UpdateUserRoleRequestWithUserId> for UpdateUserRole {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BookOwner {
     pub id: UserId,
@@ -137,7 +137,7 @@ impl From<kernel::model::user::BookOwner> for BookOwner {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckoutUser {
     pub id: UserId,
