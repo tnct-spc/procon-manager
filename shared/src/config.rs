@@ -17,7 +17,7 @@ impl AppConfig {
         };
         let redis = RedisConfig {
             host: std::env::var("REDIS_HOST").context("REDIS_HOST")?,
-            port: std::env::var("REDIS_PORT").context("REDIS_PORT")?.parse()?,
+            // port: std::env::var("REDIS_PORT").context("REDIS_PORT")?.parse()?,
         };
         let auth = AuthConfig {
             ttl: std::env::var("AUTH_TOKEN_TTL")
@@ -42,7 +42,7 @@ pub struct DatabaseConfig {
 
 pub struct RedisConfig {
     pub host: String,
-    pub port: u16,
+    // pub port: u16,
 }
 
 pub struct AuthConfig {

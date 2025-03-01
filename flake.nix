@@ -51,7 +51,8 @@
             };
             redis."r1" = {
               enable = true;
-              port = 6379;
+              port = 0;
+              unixSocket = "./redis.sock";
             };
           };
         in
