@@ -3,8 +3,10 @@ use std::sync::Arc;
 use adapter::redis::RedisClient;
 use anyhow::Context;
 use api::route::{auth, v1};
+use axum::http::Method;
 use tower_http::{
     LatencyUnit,
+    cors::{self, CorsLayer},
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -36,6 +38,13 @@ fn init_logger() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn cors() -> CorsLayer {
+    CorsLayer::new()
+        .allow_headers(cors::Any)
+        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin(cors::Any)
+}
+
 async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
     let pool = adapter::database::connect_database_with(&app_config.database);
@@ -44,6 +53,7 @@ async fn bootstrap() -> anyhow::Result<()> {
     let app = axum::Router::new()
         .merge(v1::routes())
         .merge(auth::routes())
+        .layer(cors())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))
