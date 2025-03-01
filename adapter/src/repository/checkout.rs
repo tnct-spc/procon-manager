@@ -302,3 +302,151 @@ impl CheckoutRepositoryImpl {
         Ok(res)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use chrono::Utc;
+
+    use super::*;
+
+    #[sqlx::test(fixtures("common", "book_checkout"))]
+    async fn test_checkout_flow(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
+
+        // Test basic checkout flow
+        let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let user_id = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
+        let checkout_time = Utc::now();
+
+        // Create checkout
+        let event = CreateCheckout {
+            book_id,
+            checked_out_by: user_id,
+            checked_out_at: checkout_time,
+        };
+        repo.create(event).await?;
+
+        // Verify unreturned checkout exists
+        let unreturned = repo.find_unreturned_by_user_id(user_id).await?;
+        assert_eq!(unreturned.len(), 1);
+        assert_eq!(unreturned[0].book.book_id, book_id);
+        assert_eq!(unreturned[0].checked_out_by, user_id);
+
+        // Test checkout history
+        let history = repo.find_history_by_book_id(book_id).await?;
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].book.book_id, book_id);
+
+        // Return the book
+        let return_time = Utc::now();
+        let event = UpdateReturned {
+            checkout_id: unreturned[0].id,
+            book_id,
+            returned_by: user_id,
+            returned_at: return_time,
+        };
+        repo.update_returned(event).await?;
+
+        // Verify checkout is now in history
+        let history = repo.find_history_by_book_id(book_id).await?;
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].book.book_id, book_id);
+
+        // Verify no unreturned checkouts exist
+        let unreturned = repo.find_unreturned_by_user_id(user_id).await?;
+        assert_eq!(unreturned.len(), 0);
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "book_checkout"))]
+    async fn test_checkout_errors(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
+        let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let user_id1 = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
+        let user_id2 = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5")?;
+        let checkout_time = Utc::now();
+
+        // First checkout
+        let event = CreateCheckout {
+            book_id,
+            checked_out_by: user_id1,
+            checked_out_at: checkout_time,
+        };
+        repo.create(event).await?;
+
+        // Test duplicate checkout
+        let event = CreateCheckout {
+            book_id,
+            checked_out_by: user_id2,
+            checked_out_at: checkout_time,
+        };
+        assert!(repo.create(event).await.is_err());
+
+        // Test non-existent book checkout
+        let non_existent_book_id = BookId::new();
+        let event = CreateCheckout {
+            book_id: non_existent_book_id,
+            checked_out_by: user_id1,
+            checked_out_at: checkout_time,
+        };
+        assert!(repo.create(event).await.is_err());
+
+        // Test incorrect user return
+        let unreturned = repo.find_unreturned_by_user_id(user_id1).await?;
+        let event = UpdateReturned {
+            checkout_id: unreturned[0].id,
+            book_id,
+            returned_by: user_id2, // Wrong user
+            returned_at: Utc::now(),
+        };
+        assert!(repo.update_returned(event).await.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "book_checkout"))]
+    async fn test_find_operations(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
+        let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let user_id1 = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
+        let user_id2 = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5")?;
+        let checkout_time = Utc::now();
+
+        // Create checkouts
+        let event = CreateCheckout {
+            book_id,
+            checked_out_by: user_id1,
+            checked_out_at: checkout_time,
+        };
+        repo.create(event).await?;
+
+        // Test find_unreturned_all
+        let all_unreturned = repo.find_unreturned_all().await?;
+        assert_eq!(all_unreturned.len(), 1);
+
+        // Test find_unreturned_by_user_id
+        let user1_unreturned = repo.find_unreturned_by_user_id(user_id1).await?;
+        assert_eq!(user1_unreturned.len(), 1);
+        let user2_unreturned = repo.find_unreturned_by_user_id(user_id2).await?;
+        assert_eq!(user2_unreturned.len(), 0);
+
+        // Return the book
+        let event = UpdateReturned {
+            checkout_id: all_unreturned[0].id,
+            book_id,
+            returned_by: user_id1,
+            returned_at: Utc::now(),
+        };
+        repo.update_returned(event).await?;
+
+        // Test history
+        let history = repo.find_history_by_book_id(book_id).await?;
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].book.book_id, book_id);
+
+        Ok(())
+    }
+}

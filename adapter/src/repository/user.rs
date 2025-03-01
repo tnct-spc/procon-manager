@@ -177,3 +177,113 @@ fn verify_password(password: &str, hash: &str) -> AppResult<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_user_crud(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = UserRepositoryImpl::new(ConnectionPool::new(pool));
+
+        // Test user creation
+        let name = "Test User".to_string();
+        let email = "test@example.com".to_string();
+        let password = "test_password".to_string();
+
+        let create_event = CreateUser {
+            name: name.clone(),
+            email: email.clone(),
+            password: password.clone(),
+        };
+        let user = repo.create(create_event).await?;
+
+        // Test find current user
+        let found_user = repo.find_current_user(user.id).await?.unwrap();
+        assert_eq!(found_user.name, name);
+        assert_eq!(found_user.email, email);
+        assert_eq!(found_user.role, Role::User);
+
+        // Test update password
+        let new_password = "new_password".to_string();
+        repo.update_password(UpdateUserPassword {
+            user_id: user.id,
+            current_password: password.clone(),
+            new_password: new_password.clone(),
+        })
+        .await?;
+
+        // Test wrong password
+        let result = repo
+            .update_password(UpdateUserPassword {
+                user_id: user.id,
+                current_password: "wrong_password".into(),
+                new_password: new_password.clone(),
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test update role
+        repo.update_role(UpdateUserRole {
+            user_id: user.id,
+            role: Role::Admin,
+        })
+        .await?;
+
+        let updated_user = repo.find_current_user(user.id).await?.unwrap();
+        assert_eq!(updated_user.role, Role::Admin);
+
+        // Test find all users
+        let users = repo.find_all().await?;
+        assert!(!users.is_empty());
+        assert!(users.iter().any(|u| u.id == user.id));
+
+        // Test delete user
+        repo.delete(DeleteUser { user_id: user.id }).await?;
+
+        // Verify user is deleted
+        let deleted_user = repo.find_current_user(user.id).await?;
+        assert!(deleted_user.is_none());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_error_cases(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = UserRepositoryImpl::new(ConnectionPool::new(pool));
+
+        // Test non-existent user
+        let non_existent_id = UserId::new();
+        let result = repo.find_current_user(non_existent_id).await?;
+        assert!(result.is_none());
+
+        // Test delete non-existent user
+        let result = repo
+            .delete(DeleteUser {
+                user_id: non_existent_id,
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test update role for non-existent user
+        let result = repo
+            .update_role(UpdateUserRole {
+                user_id: non_existent_id,
+                role: Role::Admin,
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test update password for non-existent user
+        let result = repo
+            .update_password(UpdateUserPassword {
+                user_id: non_existent_id,
+                current_password: "password".into(),
+                new_password: "new_password".into(),
+            })
+            .await;
+        assert!(result.is_err());
+
+        Ok(())
+    }
+}

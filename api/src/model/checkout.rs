@@ -3,9 +3,9 @@ use kernel::model::{
     checkout::{Checkout, CheckoutBook},
     id::{BookId, CheckoutId, UserId},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckoutsResponse {
     pub items: Vec<CheckoutResponse>,
@@ -19,7 +19,7 @@ impl From<Vec<Checkout>> for CheckoutsResponse {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckoutResponse {
     pub id: CheckoutId,
@@ -41,7 +41,7 @@ impl From<Checkout> for CheckoutResponse {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckoutBookResponse {
     pub id: BookId,

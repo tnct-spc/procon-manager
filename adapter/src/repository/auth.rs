@@ -67,3 +67,82 @@ impl AuthRepository for AuthRepositoryImpl {
         self.kv.delete(&key).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use kernel::{model::user::event::CreateUser, repository::user::UserRepository};
+    use shared::config::AppConfig;
+
+    use crate::repository::user::UserRepositoryImpl;
+
+    use super::*;
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_verify_user(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let user_repo = UserRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let config = AppConfig::new()?;
+        let kv = Arc::new(RedisClient::new(&config.redis)?);
+        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), kv, config.auth.ttl);
+
+        // Create a test user
+        let user = user_repo
+            .create(CreateUser {
+                name: "Auth Test User".into(),
+                email: "auth_test@example.com".into(),
+                password: "test_password".into(),
+            })
+            .await?;
+
+        // Test with correct credentials
+        let result = auth_repo
+            .verify_user("auth_test@example.com", "test_password")
+            .await?;
+        assert_eq!(result, user.id);
+
+        // Test with incorrect password
+        let result = auth_repo
+            .verify_user("auth_test@example.com", "wrong_password")
+            .await;
+        assert!(result.is_err());
+
+        // Test with non-existent email
+        let result = auth_repo
+            .verify_user("nonexistent@example.com", "test_password")
+            .await;
+        assert!(result.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_token_operations(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let config = AppConfig::new()?;
+        let kv = Arc::new(RedisClient::new(&config.redis)?);
+        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), kv, config.auth.ttl);
+
+        let user_id = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
+
+        // Test token creation
+        let event = CreateToken::new(user_id);
+        let token = auth_repo.create_token(event).await?;
+
+        // Test fetching user ID from token
+        let fetched_user_id = auth_repo.fetch_user_id_from_token(&token).await?;
+        assert_eq!(fetched_user_id, Some(user_id));
+
+        // Test token deletion
+        auth_repo.delete_token(token).await?;
+
+        // Create new token for verification
+        let event = CreateToken::new(user_id);
+        let new_token = auth_repo.create_token(event).await?;
+
+        // Test fetching user ID from deleted token
+        let fetched_user_id = auth_repo.fetch_user_id_from_token(&new_token).await?;
+        assert_eq!(fetched_user_id, Some(user_id));
+
+        Ok(())
+    }
+}

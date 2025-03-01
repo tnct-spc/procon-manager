@@ -1,6 +1,6 @@
 use crate::model::{id::UserId, role::Role};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CreateUser {
     pub name: String,
     pub email: String,

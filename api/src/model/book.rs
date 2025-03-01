@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::user::{BookOwner, CheckoutUser};
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateBookRequest {
     #[garde(length(min = 1))]
@@ -42,7 +42,7 @@ impl From<CreateBookRequest> for CreateBook {
     }
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateBookRequest {
     #[garde(length(min = 1))]
