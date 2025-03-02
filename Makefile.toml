@@ -2,28 +2,28 @@
 default_to_workspace = false
 
 [env]
-DATABASE_HOST = "${CARGO_MAKE_WORKING_DIRECTORY}/data"
-DATABASE_USERNAME = "app"
-DATABASE_PASSWORD = "passwd"
-DATABASE_NAME = "app"
 AUTH_TOKEN_TTL = 86400
+DATABASE_HOST = "${CARGO_MAKE_WORKING_DIRECTORY}/data"
+DATABASE_NAME = "app"
+DATABASE_PASSWORD = "passwd"
 DATABASE_URL = "postgresql:///${DATABASE_NAME}?host=${CARGO_MAKE_WORKING_DIRECTORY}/data&user=${DATABASE_USERNAME}&password=${DATABASE_PASSWORD}"
-REDIS_HOST = "${CARGO_MAKE_WORKING_DIRECTORY}/data/r1/redis.sock"
+DATABASE_USERNAME = "app"
 JAEGER_HOST = "localhost"
 JAEGER_PORT = 6831
+JWT_SECRET = "test-secret"
 
 
 [tasks.before-build]
 run_task = [{ name = ["compose-up", "migrate"] }]
 
 [tasks.run]
-dependencies = ["before-build"]
-command = "cargo"
 args = ["run", "${@}"]
+command = "cargo"
+dependencies = ["before-build"]
 
 [tasks.run-with-nix]
-command = "nix"
 args = ["run", ".#app", "${@}"]
+command = "nix"
 
 
 ### Development
@@ -34,7 +34,6 @@ run_task = [{ name = ["fmt", "clippy", "test"] }]
 watch = true
 
 [tasks.test]
-command = "cargo"
 args = [
   "nextest",
   "run",
@@ -44,6 +43,7 @@ args = [
   "--test-threads=1",
   "--no-tests=pass",
 ]
+command = "cargo"
 
 [tasks.test-ci]
 dependencies = ["before-build"]
@@ -58,21 +58,21 @@ done
 '''
 
 [tasks.psql]
-command = "psql"
 args = ["${DATABASE_URL}", "${@}"]
+command = "psql"
 
 [tasks.initial-setup]
-command = "psql"
 args = ["${DATABASE_URL}", "-f", "db/initial_setup.sql"]
+command = "psql"
 
 ### process-compose
 
 [tasks.compose-up]
-dependencies = ["compose-down"]
-command = "nix"
 args = ["run", ".#dev", "--", "-D"]
+command = "nix"
+dependencies = ["compose-down"]
 
 [tasks.compose-down]
-command = "process-compose"
 args = ["down"]
+command = "process-compose"
 ignore_errors = true

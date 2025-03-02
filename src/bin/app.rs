@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use adapter::redis::RedisClient;
 use anyhow::Context;
 use api::route::{auth, v1};
 use axum::http::Method;
@@ -48,8 +47,7 @@ fn cors() -> CorsLayer {
 async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
     let pool = adapter::database::connect_database_with(&app_config.database);
-    let kv = Arc::new(RedisClient::new(&app_config.redis)?);
-    let registry = Arc::new(registry::AppRegistryImpl::new(pool, kv, app_config));
+    let registry = Arc::new(registry::AppRegistryImpl::new(pool, app_config));
     let app = axum::Router::new()
         .merge(v1::routes())
         .merge(auth::routes())

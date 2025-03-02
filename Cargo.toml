@@ -1,7 +1,7 @@
 [package]
+edition = "2024"
 name = "rusty-book-manager"
 version = "0.1.0"
-edition = "2024"
 
 [[bin]]
 name = "app"
@@ -11,14 +11,21 @@ path = "src/bin/app.rs"
 members = ["api", "kernel", "adapter", "shared", "registry"]
 
 [workspace.dependencies]
-api = { path = "./api" }
-kernel = { path = "./kernel" }
 adapter = { path = "./adapter" }
-shared = { path = "./shared" }
-registry = { path = "./registry" }
 anyhow = "1.0.95"
+api = { path = "./api" }
+async-trait = "0.1.86"
 axum = { version = "0.8.1", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
+bcrypt = "0.17.0"
+chrono = { version = "0.4.40", default-features = false, features = ["serde"] }
+derive-new = "0.7.0"
+garde = { version = "0.22.0", features = ["derive", "email"] }
+kernel = { path = "./kernel" }
+mockall = "0.13.1"
+registry = { path = "./registry" }
+serde = { version = "1.0.217", features = ["derive"] }
+shared = { path = "./shared" }
 sqlx = { version = "0.8.3", features = [
   "runtime-tokio",
   "uuid",
@@ -27,30 +34,22 @@ sqlx = { version = "0.8.3", features = [
   "postgres",
   "migrate",
 ] }
-tokio = { version = "1.43.0", features = ["full"] }
-async-trait = "0.1.86"
-derive-new = "0.7.0"
-serde = { version = "1.0.217", features = ["derive"] }
-uuid = { version = "1.13.1", features = ["serde", "v4"] }
-thiserror = "2.0.11"
 strum = { version = "0.27.1", features = ["derive"] }
-tracing = { version = "0.1.41", features = ["log"] }
-bcrypt = "0.17.0"
-redis = { version = "0.29.0", features = ["tokio-rustls-comp"] }
-garde = { version = "0.22.0", features = ["derive", "email"] }
-chrono = { version = "0.4.40", default-features = false, features = ["serde"] }
-mockall = "0.13.1"
-tower = "0.5.2"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["full"] }
 tokio-stream = "0.1.17"
+tower = "0.5.2"
+tracing = { version = "0.1.41", features = ["log"] }
+uuid = { version = "1.13.1", features = ["serde", "v4"] }
 
 [dependencies]
-api.workspace = true
 adapter.workspace = true
-shared.workspace = true
-registry.workspace = true
 anyhow.workspace = true
+api.workspace = true
 axum.workspace = true
+registry.workspace = true
+shared.workspace = true
 tokio.workspace = true
+tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
-tower-http = { version = "0.6.2", features = ["cors", "trace"] }

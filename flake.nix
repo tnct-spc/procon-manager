@@ -49,11 +49,6 @@
               listen_addresses = ""; # disable listening via TCP
               socketDir = "data";
             };
-            redis."r1" = {
-              enable = true;
-              port = 0;
-              unixSocket = "./redis.sock";
-            };
           };
         in
         {
@@ -128,9 +123,16 @@
               nixfmt.enable = true;
               rustfmt.enable = true;
               rustfmt.edition = "2024";
+              taplo.enable = true;
             };
 
-            settings.formatter = { };
+            settings.formatter = {
+              taplo.options = [
+                "fmt"
+                "-o"
+                "reorder_keys=true"
+              ];
+            };
           };
 
           pre-commit = {
@@ -154,6 +156,7 @@
               inputs.services-flake.processComposeModules.default
             ];
 
+            cli.options.no-server = false;
             settings = {
               processes = {
                 backend-server = {
@@ -173,6 +176,8 @@
             imports = [
               inputs.services-flake.processComposeModules.default
             ];
+
+            cli.options.no-server = false;
 
             inherit services;
           };
