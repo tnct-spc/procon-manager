@@ -1161,6 +1161,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "item-manager"
+version = "0.1.0"
+dependencies = [
+ "adapter",
+ "anyhow",
+ "api",
+ "axum",
+ "dotenvy",
+ "registry",
+ "shared",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1789,22 +1806,6 @@ name = "rustversion"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
-
-[[package]]
-name = "rusty-book-manager"
-version = "0.1.0"
-dependencies = [
- "adapter",
- "anyhow",
- "api",
- "axum",
- "registry",
- "shared",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
 
 [[package]]
 name = "ryu"

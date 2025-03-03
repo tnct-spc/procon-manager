@@ -12,6 +12,10 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    if dotenvy::from_filename(".env-item").is_err() {
+        println!("Failed to read .env-item file");
+    }
+
     init_logger()?;
     bootstrap().await
 }
