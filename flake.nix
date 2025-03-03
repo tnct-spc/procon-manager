@@ -47,7 +47,7 @@
               '';
               initialDatabases = [ { name = dbName; } ];
               listen_addresses = ""; # disable listening via TCP
-              socketDir = "data";
+              socketDir = "data/pg1";
             };
           };
         in
@@ -57,45 +57,9 @@
             overlays = [ inputs.rust-overlay.overlays.default ];
           };
 
-          packages.rusty-book-manager =
-            let
-              toolchain = pkgs.rust-bin.stable.latest.default;
-              rustPlatform = pkgs.makeRustPlatform {
-                cargo = toolchain;
-                rustc = toolchain;
-              };
-            in
-            rustPlatform.buildRustPackage {
-              pname = "rusty-book-manager";
-              version = "0.1.0";
+          packages.item-manager = pkgs.callPackage ./item-manager/package.nix { };
 
-              src =
-                let
-                  fs = pkgs.lib.fileset;
-                in
-                fs.toSource {
-                  root = ./.;
-                  fileset = fs.difference ./. (
-                    fs.unions [
-                      (fs.maybeMissing ./result)
-                      ./flake.nix
-                      ./flake.lock
-                    ]
-                  );
-                };
-
-              cargoDeps = pkgs.rustPlatform.importCargoLock { lockFile = ./Cargo.lock; };
-
-              doCheck = false;
-
-              SQLX_OFFLINE = true;
-
-              meta = {
-                mainProgram = "app";
-              };
-            };
-
-          packages.default = config.packages.rusty-book-manager;
+          packages.default = config.packages.item-manager;
 
           devShells.default = pkgs.mkShell {
             inputsFrom = [
@@ -113,7 +77,7 @@
             ];
 
             shellHook = ''
-              export DATABASE_URL="postgresql:///app?host=$(pwd)/data&user=app&password=passwd"
+              export DATABASE_URL="postgresql:///app?host=$(pwd)/data/pg1&user=app&password=passwd"
             '';
           };
 
@@ -140,13 +104,15 @@
             settings = {
               hooks = {
                 ripsecrets.enable = true;
-                clippy = {
-                  enable = true;
-                  packageOverrides.cargo = pkgs.rust-bin.stable.latest.default;
-                  packageOverrides.clippy = pkgs.rust-bin.stable.latest.default;
-                };
                 typos.enable = true;
                 treefmt.enable = true;
+                clippy-item-manager = {
+                  enable = true;
+                  name = "clippy-item-manager";
+                  entry = "${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
+                  files = "\\.(rs)$";
+                  pass_filenames = false;
+                };
               };
             };
           };
@@ -160,10 +126,9 @@
             settings = {
               processes = {
                 backend-server = {
-                  command = pkgs.lib.getExe config.packages.rusty-book-manager;
+                  command = pkgs.lib.getExe config.packages.item-manager;
                   depends_on = {
                     "pg1".condition = "process_healthy";
-                    "r1".condition = "process_healthy";
                   };
                 };
               };

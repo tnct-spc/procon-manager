@@ -16,6 +16,8 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './item-manager -> target'
 
       - uses: cachix/install-nix-action@v30
 
@@ -32,13 +34,16 @@ jobs:
           nix_channel: nixpkgs
 
       - name: Test
-        run: cargo make test-ci
+        run: cargo make --cwd item-manager test-ci
 
       - name: Clippy
+        working-directory: item-manager
         run: cargo clippy --all --all-targets -- -Dwarnings
 
       - name: Rustfmt
+        working-directory: item-manager
         run: cargo fmt --all --check
 
       - name: Check unused dependencies
+        working-directory: item-manager
         run: nix run nixpkgs#cargo-machete
