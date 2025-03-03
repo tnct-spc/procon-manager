@@ -16,6 +16,8 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './item-manager -> target'
 
       - uses: cachix/install-nix-action@v30
 
