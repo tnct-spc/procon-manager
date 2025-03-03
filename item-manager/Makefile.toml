@@ -1,0 +1,62 @@
+[config]
+default_to_workspace = false
+
+[env]
+AUTH_TOKEN_TTL = 86400
+DATABASE_HOST = "${CARGO_MAKE_WORKING_DIRECTORY}/../data/pg1"
+DATABASE_NAME = "app"
+DATABASE_PASSWORD = "passwd"
+DATABASE_URL = "postgresql:///${DATABASE_NAME}?host=${DATABASE_HOST}&user=${DATABASE_USERNAME}&password=${DATABASE_PASSWORD}"
+DATABASE_USERNAME = "app"
+JAEGER_HOST = "localhost"
+JAEGER_PORT = 6831
+JWT_SECRET = "test-secret"
+
+
+[tasks.before-build]
+dependencies = [{ name = "compose-up", path = "../" }, { name = "migrate" }]
+
+[tasks.run]
+args = ["run", "${@}"]
+command = "cargo"
+dependencies = ["before-build"]
+
+
+### Development
+
+[tasks.watch]
+dependencies = ["before-build"]
+run_task = [{ name = ["fmt", "clippy", "test"] }]
+watch = true
+
+[tasks.test]
+args = [
+  "nextest",
+  "run",
+  "--workspace",
+  "--status-level",
+  "all",
+  "--test-threads=1",
+  "--no-tests=pass",
+]
+command = "cargo"
+
+[tasks.test-ci]
+dependencies = ["before-build"]
+run_task = "test"
+
+[tasks.migrate]
+script = '''
+#!/usr/bin/env bash
+until sqlx migrate run --source adapter/migrations; do
+    sleep 1
+done
+'''
+
+[tasks.psql]
+args = ["${DATABASE_URL}", "${@}"]
+command = "psql"
+
+[tasks.initial-setup]
+args = ["${DATABASE_URL}", "-f", "db/initial_setup.sql"]
+command = "psql"
