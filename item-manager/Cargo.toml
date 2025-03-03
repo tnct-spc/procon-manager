@@ -47,6 +47,7 @@ adapter.workspace = true
 anyhow.workspace = true
 api.workspace = true
 axum.workspace = true
+dotenvy = "0.15.7"
 registry.workspace = true
 shared.workspace = true
 tokio.workspace = true
