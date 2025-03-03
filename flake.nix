@@ -57,9 +57,9 @@
             overlays = [ inputs.rust-overlay.overlays.default ];
           };
 
-          packages.rusty-book-manager = pkgs.callPackage ./item-manager/package.nix { };
+          packages.item-manager = pkgs.callPackage ./item-manager/package.nix { };
 
-          packages.default = config.packages.rusty-book-manager;
+          packages.default = config.packages.item-manager;
 
           devShells.default = pkgs.mkShell {
             inputsFrom = [
@@ -126,7 +126,7 @@
             settings = {
               processes = {
                 backend-server = {
-                  command = pkgs.lib.getExe config.packages.rusty-book-manager;
+                  command = pkgs.lib.getExe config.packages.item-manager;
                   depends_on = {
                     "pg1".condition = "process_healthy";
                   };

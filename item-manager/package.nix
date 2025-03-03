@@ -11,7 +11,7 @@ let
   };
 in
 rustPlatform.buildRustPackage {
-  pname = "rusty-book-manager";
+  pname = "item-manager";
   version = "0.1.0";
 
   src =
