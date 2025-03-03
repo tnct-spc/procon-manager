@@ -1,15 +1,16 @@
 [package]
+edition = "2024"
 name = "adapter"
 version = "0.1.0"
-edition = "2024"
 
 [dependencies]
-kernel.workspace = true
-shared.workspace = true
-sqlx.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
-derive-new.workspace = true
-redis.workspace = true
 bcrypt.workspace = true
 chrono.workspace = true
+derive-new.workspace = true
+jsonwebtoken = "9.2.0"
+kernel.workspace = true
+serde.workspace = true
+shared.workspace = true
+sqlx.workspace = true

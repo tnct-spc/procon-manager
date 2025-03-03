@@ -16,8 +16,6 @@ pub enum AppError {
     #[error("No rows affected: {0}")]
     NoRowsAffectedError(String),
     #[error("{0}")]
-    KeyValueStoreError(#[from] redis::RedisError),
-    #[error("{0}")]
     BcryptError(#[from] bcrypt::BcryptError),
     #[error("{0}")]
     ConvertToUuidError(#[from] uuid::Error),
@@ -39,12 +37,11 @@ impl axum::response::IntoResponse for AppError {
             AppError::ValidationError(_) | AppError::ConvertToUuidError(_) => {
                 StatusCode::BAD_REQUEST
             }
-            AppError::UnauthenticatedError | AppError::ForbiddenOperation => StatusCode::FORBIDDEN,
-            AppError::UnauthorizedError => StatusCode::UNAUTHORIZED,
+            AppError::UnauthorizedError | AppError::ForbiddenOperation => StatusCode::FORBIDDEN,
+            AppError::UnauthenticatedError => StatusCode::UNAUTHORIZED,
             e @ (AppError::TransactionError(_)
             | AppError::SpecificOperationError(_)
             | AppError::NoRowsAffectedError(_)
-            | AppError::KeyValueStoreError(_)
             | AppError::BcryptError(_)
             | AppError::ConversionEntityError(_)) => {
                 tracing::error!(

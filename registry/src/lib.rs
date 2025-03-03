@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use adapter::{
-    database::ConnectionPool,
-    redis::RedisClient,
+    database::{ConnectionPool, model::auth::JwtSecret},
     repository::{
         auth::AuthRepositoryImpl, book::BookRepositoryImpl, checkout::CheckoutRepositoryImpl,
         health::HealthCheckRepositoryImpl, user::UserRepositoryImpl,
@@ -24,16 +23,12 @@ pub struct AppRegistryImpl {
 }
 
 impl AppRegistryImpl {
-    pub fn new(
-        pool: ConnectionPool,
-        redis_client: Arc<RedisClient>,
-        app_config: AppConfig,
-    ) -> Self {
+    pub fn new(pool: ConnectionPool, app_config: AppConfig) -> Self {
         let health_check_repository = Arc::new(HealthCheckRepositoryImpl::new(pool.clone()));
         let book_repository = Arc::new(BookRepositoryImpl::new(pool.clone()));
         let auth_repository = Arc::new(AuthRepositoryImpl::new(
             pool.clone(),
-            redis_client.clone(),
+            JwtSecret::new(app_config.auth.secret),
             app_config.auth.ttl,
         ));
         let user_repository = Arc::new(UserRepositoryImpl::new(pool.clone()));

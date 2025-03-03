@@ -1,10 +1,3 @@
-use crate::{
-    database::{
-        ConnectionPool,
-        model::auth::{AuthorizationKey, AuthorizedUserId, UserItem, from},
-    },
-    redis::RedisClient,
-};
 use async_trait::async_trait;
 use derive_new::new;
 use kernel::{
@@ -15,12 +8,16 @@ use kernel::{
     repository::auth::AuthRepository,
 };
 use shared::error::{AppError, AppResult};
-use std::sync::Arc;
+
+use crate::database::{
+    ConnectionPool,
+    model::auth::{JwtSecret, UserItem},
+};
 
 #[derive(new)]
 pub struct AuthRepositoryImpl {
     db: ConnectionPool,
-    kv: Arc<RedisClient>,
+    secret: JwtSecret,
     ttl: u64,
 }
 
@@ -30,11 +27,7 @@ impl AuthRepository for AuthRepositoryImpl {
         &self,
         access_token: &AccessToken,
     ) -> AppResult<Option<UserId>> {
-        let key: AuthorizationKey = access_token.into();
-        self.kv
-            .get(&key)
-            .await
-            .map(|x| x.map(AuthorizedUserId::into_inner))
+        self.secret.verify_token(access_token)
     }
 
     async fn verify_user(&self, email: &str, password: &str) -> AppResult<UserId> {
@@ -57,14 +50,7 @@ impl AuthRepository for AuthRepositoryImpl {
     }
 
     async fn create_token(&self, event: CreateToken) -> AppResult<AccessToken> {
-        let (key, value) = from(event);
-        self.kv.set_ex(&key, &value, self.ttl).await?;
-        Ok(key.into())
-    }
-
-    async fn delete_token(&self, access_token: AccessToken) -> AppResult<()> {
-        let key: AuthorizationKey = access_token.into();
-        self.kv.delete(&key).await
+        self.secret.create_token(event.user_id, self.ttl)
     }
 }
 
@@ -73,7 +59,6 @@ mod tests {
     use std::str::FromStr;
 
     use kernel::{model::user::event::CreateUser, repository::user::UserRepository};
-    use shared::config::AppConfig;
 
     use crate::repository::user::UserRepositoryImpl;
 
@@ -82,9 +67,9 @@ mod tests {
     #[sqlx::test(fixtures("common"))]
     async fn test_verify_user(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let user_repo = UserRepositoryImpl::new(ConnectionPool::new(pool.clone()));
-        let config = AppConfig::new()?;
-        let kv = Arc::new(RedisClient::new(&config.redis)?);
-        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), kv, config.auth.ttl);
+        let ttl = 3600; // 1 hour
+        let secret = JwtSecret::new("test_secret".to_string());
+        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), secret, ttl);
 
         // Create a test user
         let user = user_repo
@@ -118,29 +103,18 @@ mod tests {
 
     #[sqlx::test(fixtures("common"))]
     async fn test_token_operations(pool: sqlx::PgPool) -> anyhow::Result<()> {
-        let config = AppConfig::new()?;
-        let kv = Arc::new(RedisClient::new(&config.redis)?);
-        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), kv, config.auth.ttl);
+        let secret = JwtSecret::new("test_secret".to_string());
+        let ttl = 3600; // 1 hour
+        let auth_repo = AuthRepositoryImpl::new(ConnectionPool::new(pool), secret, ttl);
 
         let user_id = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
 
-        // Test token creation
+        // Test token creation and verification
         let event = CreateToken::new(user_id);
         let token = auth_repo.create_token(event).await?;
 
         // Test fetching user ID from token
         let fetched_user_id = auth_repo.fetch_user_id_from_token(&token).await?;
-        assert_eq!(fetched_user_id, Some(user_id));
-
-        // Test token deletion
-        auth_repo.delete_token(token).await?;
-
-        // Create new token for verification
-        let event = CreateToken::new(user_id);
-        let new_token = auth_repo.create_token(event).await?;
-
-        // Test fetching user ID from deleted token
-        let fetched_user_id = auth_repo.fetch_user_id_from_token(&new_token).await?;
         assert_eq!(fetched_user_id, Some(user_id));
 
         Ok(())
