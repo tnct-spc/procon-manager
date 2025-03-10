@@ -1,5 +1,6 @@
 name: CI for book
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -24,6 +25,11 @@ jobs:
       - uses: cachix/cachix-action@v15
         with:
           name: yadokani389
+
+      - name: Restore binary cache
+        uses: ./.github/actions/binary-cache
+        with:
+          package: .#devShells.x86_64-linux.default
 
       - name: enable direnv
         run: echo "use flake" > .envrc
