@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub async fn register_book(
-    user: AuthorizedUser,
+    _user: AuthorizedUser,
     State(registry): State<AppRegistry>,
     Json(req): Json<CreateBookRequest>,
 ) -> Result<StatusCode, AppError> {
@@ -25,7 +25,7 @@ pub async fn register_book(
 
     registry
         .book_repository()
-        .create(req.into(), user.id())
+        .create(req.into())
         .await
         .map(|_| StatusCode::CREATED)
 }
@@ -61,14 +61,14 @@ pub async fn show_book(
 }
 
 pub async fn update_book(
-    user: AuthorizedUser,
+    _user: AuthorizedUser,
     Path(book_id): Path<BookId>,
     State(registry): State<AppRegistry>,
     Json(req): Json<UpdateBookRequest>,
 ) -> AppResult<StatusCode> {
     req.validate()?;
 
-    let update_book = UpdateBookRequestWithIds::new(book_id, user.id(), req);
+    let update_book = UpdateBookRequestWithIds::new(book_id, req);
     registry
         .book_repository()
         .update(update_book.into())
@@ -77,14 +77,11 @@ pub async fn update_book(
 }
 
 pub async fn delete_book(
-    user: AuthorizedUser,
+    _user: AuthorizedUser,
     Path(book_id): Path<BookId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
-    let delete_book = DeleteBook {
-        book_id,
-        requested_user: user.id(),
-    };
+    let delete_book = DeleteBook { book_id };
     registry
         .book_repository()
         .delete(delete_book)

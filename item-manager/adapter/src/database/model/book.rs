@@ -1,7 +1,7 @@
 use kernel::model::{
     book::{Book, Checkout},
     id::{BookId, CheckoutId, UserId},
-    user::{BookOwner, CheckoutUser},
+    user::CheckoutUser,
 };
 
 pub struct BookRow {
@@ -10,8 +10,6 @@ pub struct BookRow {
     pub author: String,
     pub isbn: String,
     pub description: String,
-    pub owned_by: UserId,
-    pub owner_name: String,
 }
 
 impl BookRow {
@@ -22,10 +20,6 @@ impl BookRow {
             author: self.author,
             isbn: self.isbn,
             description: self.description,
-            owner: BookOwner {
-                id: self.owned_by,
-                name: self.owner_name,
-            },
             checkout,
         }
     }

@@ -10,12 +10,6 @@ pub struct User {
 }
 
 #[derive(Debug)]
-pub struct BookOwner {
-    pub id: UserId,
-    pub name: String,
-}
-
-#[derive(Debug)]
 pub struct CheckoutUser {
     pub id: UserId,
     pub name: String,

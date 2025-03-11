@@ -9,7 +9,6 @@ use kernel::{
         checkout::{Checkout, CheckoutBook},
         id::{BookId, CheckoutId, UserId},
         list::PaginatedList,
-        user::BookOwner,
     },
     repository::{book::MockBookRepository, checkout::MockCheckoutRepository},
 };
@@ -44,10 +43,6 @@ async fn show_book_list_with_query_200(
                 isbn: "".into(),
                 author: "Yuki Toyoda".into(),
                 description: "RustによるWebアプリケーション開発".into(),
-                owner: BookOwner {
-                    id: UserId::new(),
-                    name: "Yuki Toyoda".into(),
-                },
                 checkout: None,
             }];
             Ok(PaginatedList {
@@ -92,10 +87,6 @@ async fn show_book_list_with_query_400(
                 isbn: "".into(),
                 author: "Yuki Toyoda".into(),
                 description: "RustによるWebアプリケーション開発".into(),
-                owner: BookOwner {
-                    id: UserId::new(),
-                    name: "Yuki Toyoda".into(),
-                },
                 checkout: None,
             }];
             Ok(PaginatedList {
@@ -122,7 +113,7 @@ async fn show_book_list_with_query_400(
 async fn register_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     fixture.expect_book_repository().returning(move || {
         let mut mock = MockBookRepository::new();
-        mock.expect_create().returning(|_book, _user_id| Ok(()));
+        mock.expect_create().returning(|_book| Ok(()));
         Arc::new(mock)
     });
 
@@ -160,7 +151,7 @@ async fn register_book_400(
 ) -> anyhow::Result<()> {
     fixture.expect_book_repository().returning(move || {
         let mut mock = MockBookRepository::new();
-        mock.expect_create().returning(|_book, _user_id| Ok(()));
+        mock.expect_create().returning(|_book| Ok(()));
         Arc::new(mock)
     });
 
@@ -197,10 +188,6 @@ async fn show_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Res
                 isbn: "1234567890123".into(),
                 author: "Test Author".into(),
                 description: "Test Description".into(),
-                owner: BookOwner {
-                    id: UserId::new(),
-                    name: "Test User".into(),
-                },
                 checkout: None,
             }))
         });

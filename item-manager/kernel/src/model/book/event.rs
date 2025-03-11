@@ -1,4 +1,4 @@
-use crate::model::id::{BookId, UserId};
+use crate::model::id::BookId;
 
 pub struct CreateBook {
     pub title: String,
@@ -14,11 +14,9 @@ pub struct UpdateBook {
     pub author: String,
     pub isbn: String,
     pub description: String,
-    pub requested_user: UserId,
 }
 
 #[derive(Debug)]
 pub struct DeleteBook {
     pub book_id: BookId,
-    pub requested_user: UserId,
 }

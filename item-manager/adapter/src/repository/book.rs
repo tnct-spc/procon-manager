@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use derive_new::new;
 use kernel::model::{
     book::{Checkout, event::DeleteBook},
-    id::{BookId, UserId},
+    id::BookId,
     list::PaginatedList,
 };
 use kernel::{
@@ -26,17 +26,16 @@ pub struct BookRepositoryImpl {
 
 #[async_trait]
 impl BookRepository for BookRepositoryImpl {
-    async fn create(&self, event: CreateBook, user_id: UserId) -> AppResult<()> {
+    async fn create(&self, event: CreateBook) -> AppResult<()> {
         sqlx::query!(
             r#"
-                INSERT INTO books (title, author, isbn, description, user_id)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO books (title, author, isbn, description)
+                VALUES ($1, $2, $3, $4)
             "#,
             event.title,
             event.author,
             event.isbn,
             event.description,
-            user_id.raw()
         )
         .execute(self.db.inner_ref())
         .await
@@ -75,11 +74,8 @@ impl BookRepository for BookRepositoryImpl {
                     b.title AS title,
                     b.author AS author,
                     b.isbn AS isbn,
-                    b.description AS description,
-                    u.user_id AS owned_by,
-                    u.name AS owner_name
+                    b.description AS description
                 FROM books AS b
-                INNER JOIN users AS u USING(user_id)
                 WHERE b.book_id IN (SELECT * FROM UNNEST($1::uuid[]))
                 ORDER BY b.created_at DESC
             "#,
@@ -117,11 +113,8 @@ impl BookRepository for BookRepositoryImpl {
                     b.title AS title,
                     b.author AS author,
                     b.isbn AS isbn,
-                    b.description AS description,
-                    u.user_id AS owned_by,
-                    u.name AS owner_name
+                    b.description AS description
                 FROM books AS b
-                INNER JOIN users AS u USING(user_id)
                 WHERE b.book_id = $1
             "#,
             book_id.raw()
@@ -149,14 +142,12 @@ impl BookRepository for BookRepositoryImpl {
                     isbn = $3,
                     description = $4
                 WHERE book_id = $5
-                AND user_id = $6
             "#,
             event.title,
             event.author,
             event.isbn,
             event.description,
             event.book_id.raw(),
-            event.requested_user.raw()
         )
         .execute(self.db.inner_ref())
         .await
@@ -173,10 +164,8 @@ impl BookRepository for BookRepositoryImpl {
             r#"
                 DELETE FROM books
                 WHERE book_id = $1
-                AND user_id = $2
             "#,
             event.book_id.raw(),
-            event.requested_user.raw()
         )
         .execute(self.db.inner_ref())
         .await
@@ -221,39 +210,31 @@ impl BookRepositoryImpl {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::repository::{
-        book::BookRepositoryImpl, checkout::CheckoutRepositoryImpl, user::UserRepositoryImpl,
-    };
+    use std::str::FromStr;
+
     use chrono::Utc;
     use kernel::{
         model::{
             checkout::event::{CreateCheckout, UpdateReturned},
             id::UserId,
-            user::event::CreateUser,
         },
-        repository::{checkout::CheckoutRepository, user::UserRepository},
+        repository::checkout::CheckoutRepository,
     };
-    use std::str::FromStr;
+
+    use crate::repository::{book::BookRepositoryImpl, checkout::CheckoutRepositoryImpl};
+
+    use super::*;
 
     #[sqlx::test(fixtures("common"))]
     async fn test_register_book(pool: sqlx::PgPool) -> anyhow::Result<()> {
-        let user_repo = UserRepositoryImpl::new(ConnectionPool::new(pool.clone()));
         let repo = BookRepositoryImpl::new(ConnectionPool::new(pool.clone()));
-        let user = user_repo
-            .create(CreateUser {
-                name: "Test User".into(),
-                email: "test@example.com".into(),
-                password: "test_password".into(),
-            })
-            .await?;
         let book = CreateBook {
             title: "Test Title".into(),
             author: "Test Author".into(),
             isbn: "Test ISBN".into(),
             description: "Test Description".into(),
         };
-        repo.create(book, user.id).await?;
+        repo.create(book).await?;
         let options = BookListOptions {
             limit: 20,
             offset: 0,
@@ -269,7 +250,6 @@ mod tests {
             author,
             isbn,
             description,
-            owner,
             ..
         } = res.unwrap();
         assert_eq!(id, book_id);
@@ -277,7 +257,6 @@ mod tests {
         assert_eq!(author, "Test Author");
         assert_eq!(isbn, "Test ISBN");
         assert_eq!(description, "Test Description");
-        assert_eq!(owner.name, "Test User");
         Ok(())
     }
 
@@ -295,7 +274,6 @@ mod tests {
             author: NEW_AUTHOR.into(), // This is the difference
             isbn: book.isbn,
             description: book.description,
-            requested_user: UserId::from_str("5b4c96ac-316a-4bee-8e69-cac5eb84ff4c").unwrap(),
         };
         repo.update(update_book).await.unwrap();
 
@@ -310,11 +288,7 @@ mod tests {
         let repo = BookRepositoryImpl::new(ConnectionPool::new(pool.clone()));
         let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
 
-        repo.delete(DeleteBook {
-            book_id,
-            requested_user: UserId::from_str("5b4c96ac-316a-4bee-8e69-cac5eb84ff4c")?,
-        })
-        .await?;
+        repo.delete(DeleteBook { book_id }).await?;
         let book = repo.find_by_id(book_id).await?;
 
         assert!(book.is_none());

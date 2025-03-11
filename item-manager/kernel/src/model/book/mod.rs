@@ -1,6 +1,6 @@
 use super::{
     id::{BookId, CheckoutId},
-    user::{BookOwner, CheckoutUser},
+    user::CheckoutUser,
 };
 
 pub mod event;
@@ -12,7 +12,6 @@ pub struct Book {
     pub author: String,
     pub isbn: String,
     pub description: String,
-    pub owner: BookOwner,
     pub checkout: Option<Checkout>,
 }
 

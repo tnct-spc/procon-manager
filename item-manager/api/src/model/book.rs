@@ -5,12 +5,12 @@ use kernel::model::{
         Book, BookListOptions,
         event::{CreateBook, UpdateBook},
     },
-    id::{BookId, CheckoutId, UserId},
+    id::{BookId, CheckoutId},
     list::PaginatedList,
 };
 use serde::{Deserialize, Serialize};
 
-use super::user::{BookOwner, CheckoutUser};
+use super::user::CheckoutUser;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -56,12 +56,11 @@ pub struct UpdateBookRequest {
 }
 
 #[derive(new)]
-pub struct UpdateBookRequestWithIds(BookId, UserId, UpdateBookRequest);
+pub struct UpdateBookRequestWithIds(BookId, UpdateBookRequest);
 impl From<UpdateBookRequestWithIds> for UpdateBook {
     fn from(value: UpdateBookRequestWithIds) -> Self {
         let UpdateBookRequestWithIds(
             book_id,
-            user_id,
             UpdateBookRequest {
                 title,
                 author,
@@ -75,7 +74,6 @@ impl From<UpdateBookRequestWithIds> for UpdateBook {
             author,
             isbn,
             description,
-            requested_user: user_id,
         }
     }
 }
@@ -110,7 +108,6 @@ pub struct BookResponse {
     pub author: String,
     pub isbn: String,
     pub description: String,
-    pub owner: BookOwner,
     pub checkout: Option<BookCheckoutResponse>,
 }
 
@@ -122,7 +119,6 @@ impl From<Book> for BookResponse {
             author: value.author,
             isbn: value.isbn,
             description: value.description,
-            owner: value.owner.into(),
             checkout: value.checkout.map(BookCheckoutResponse::from),
         }
     }
