@@ -10,9 +10,12 @@ use shared::error::{AppError, AppResult};
 
 use crate::{
     extractor::AuthorizedUser,
-    model::book::{
-        BookListQuery, BookResponse, CreateBookRequest, PaginatedBookResponse, UpdateBookRequest,
-        UpdateBookRequestWithIds,
+    model::{
+        book::{
+            BookResponse, CreateBookRequest, PaginatedBookResponse, UpdateBookRequest,
+            UpdateBookRequestWithIds,
+        },
+        list::ListQuery,
     },
 };
 
@@ -32,7 +35,7 @@ pub async fn register_book(
 
 pub async fn show_book_list(
     _user: AuthorizedUser,
-    Query(query): Query<BookListQuery>,
+    Query(query): Query<ListQuery>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<Json<PaginatedBookResponse>> {
     query.validate()?;

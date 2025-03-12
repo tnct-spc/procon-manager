@@ -1,7 +1,4 @@
-use super::{
-    id::{BookId, CheckoutId},
-    user::CheckoutUser,
-};
+use super::{checkout::SimpleCheckout, id::BookId};
 
 pub mod event;
 
@@ -12,18 +9,5 @@ pub struct Book {
     pub author: String,
     pub isbn: String,
     pub description: String,
-    pub checkout: Option<Checkout>,
-}
-
-#[derive(Debug)]
-pub struct BookListOptions {
-    pub limit: i64,
-    pub offset: i64,
-}
-
-#[derive(Debug)]
-pub struct Checkout {
-    pub checkout_id: CheckoutId,
-    pub checked_out_by: CheckoutUser,
-    pub checked_out_at: chrono::DateTime<chrono::Utc>,
+    pub checkout: Option<SimpleCheckout>,
 }

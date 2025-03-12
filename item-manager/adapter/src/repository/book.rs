@@ -2,18 +2,16 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use derive_new::new;
+use kernel::model::id::BookId;
+use kernel::model::list::{ListOptions, PaginatedList};
 use kernel::model::{
-    book::{Checkout, event::DeleteBook},
-    id::BookId,
-    list::PaginatedList,
-};
-use kernel::{
-    model::book::{
-        Book, BookListOptions,
-        event::{CreateBook, UpdateBook},
+    book::{
+        Book,
+        event::{CreateBook, DeleteBook, UpdateBook},
     },
-    repository::book::BookRepository,
+    checkout::SimpleCheckout,
 };
+use kernel::repository::item::CommonItemRepository;
 use shared::error::{AppError, AppResult};
 
 use crate::database::model::book::{BookRow, PaginatedBookRow};
@@ -25,7 +23,7 @@ pub struct BookRepositoryImpl {
 }
 
 #[async_trait]
-impl BookRepository for BookRepositoryImpl {
+impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for BookRepositoryImpl {
     async fn create(&self, event: CreateBook) -> AppResult<()> {
         sqlx::query!(
             r#"
@@ -43,8 +41,8 @@ impl BookRepository for BookRepositoryImpl {
         Ok(())
     }
 
-    async fn find_all(&self, options: BookListOptions) -> AppResult<PaginatedList<Book>> {
-        let BookListOptions { limit, offset } = options;
+    async fn find_all(&self, options: ListOptions) -> AppResult<PaginatedList<Book>> {
+        let ListOptions { limit, offset } = options;
         let rows: Vec<PaginatedBookRow> = sqlx::query_as!(
             PaginatedBookRow,
             r#"
@@ -180,7 +178,10 @@ impl BookRepository for BookRepositoryImpl {
 }
 
 impl BookRepositoryImpl {
-    async fn find_checkouts(&self, book_ids: &[BookId]) -> AppResult<HashMap<BookId, Checkout>> {
+    async fn find_checkouts(
+        &self,
+        book_ids: &[BookId],
+    ) -> AppResult<HashMap<BookId, SimpleCheckout>> {
         let res = sqlx::query_as!(
             BookCheckoutRow,
             r#"
@@ -201,7 +202,7 @@ impl BookRepositoryImpl {
         .await
         .map_err(AppError::SpecificOperationError)?
         .into_iter()
-        .map(|row| (row.book_id, Checkout::from(row)))
+        .map(|row| (row.book_id, SimpleCheckout::from(row)))
         .collect();
 
         Ok(res)
@@ -235,7 +236,7 @@ mod tests {
             description: "Test Description".into(),
         };
         repo.create(book).await?;
-        let options = BookListOptions {
+        let options = ListOptions {
             limit: 20,
             offset: 0,
         };
@@ -303,7 +304,7 @@ mod tests {
         const LEN: i64 = 50; // 50 is the number of records of fixtures "book_list"
 
         let res = repo
-            .find_all(BookListOptions {
+            .find_all(ListOptions {
                 limit: 10,
                 offset: 0,
             })
@@ -314,7 +315,7 @@ mod tests {
         assert_eq!(res.items[0].title, "title050");
 
         let res = repo
-            .find_all(BookListOptions {
+            .find_all(ListOptions {
                 limit: 10,
                 offset: 10,
             })
@@ -325,7 +326,7 @@ mod tests {
         assert_eq!(res.items[0].title, "title040");
 
         let res = repo
-            .find_all(BookListOptions {
+            .find_all(ListOptions {
                 limit: 10,
                 offset: 100,
             })
@@ -348,7 +349,7 @@ mod tests {
         let user_id2 = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5").unwrap();
 
         let book = book_repo
-            .find_all(BookListOptions {
+            .find_all(ListOptions {
                 limit: 20,
                 offset: 0,
             })

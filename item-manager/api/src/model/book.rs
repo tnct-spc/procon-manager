@@ -2,9 +2,10 @@ use derive_new::new;
 use garde::Validate;
 use kernel::model::{
     book::{
-        Book, BookListOptions,
+        Book,
         event::{CreateBook, UpdateBook},
     },
+    checkout::SimpleCheckout,
     id::{BookId, CheckoutId},
     list::PaginatedList,
 };
@@ -78,28 +79,6 @@ impl From<UpdateBookRequestWithIds> for UpdateBook {
     }
 }
 
-#[derive(Debug, Deserialize, Validate)]
-pub struct BookListQuery {
-    #[garde(range(min = 0))]
-    #[serde(default = "default_limit")]
-    pub limit: i64,
-    #[garde(range(min = 0))]
-    #[serde(default)]
-    pub offset: i64,
-}
-
-const DEFAULT_LIMIT: i64 = 20;
-const fn default_limit() -> i64 {
-    DEFAULT_LIMIT
-}
-
-impl From<BookListQuery> for BookListOptions {
-    fn from(value: BookListQuery) -> Self {
-        let BookListQuery { limit, offset } = value;
-        Self { limit, offset }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BookResponse {
@@ -158,8 +137,8 @@ pub struct BookCheckoutResponse {
     pub checked_out_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<kernel::model::book::Checkout> for BookCheckoutResponse {
-    fn from(value: kernel::model::book::Checkout) -> Self {
+impl From<SimpleCheckout> for BookCheckoutResponse {
+    fn from(value: SimpleCheckout) -> Self {
         Self {
             id: value.checkout_id,
             checked_out_by: value.checked_out_by.into(),

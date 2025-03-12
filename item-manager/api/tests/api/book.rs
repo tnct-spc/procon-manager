@@ -10,7 +10,7 @@ use kernel::{
         id::{BookId, CheckoutId, UserId},
         list::PaginatedList,
     },
-    repository::{book::MockBookRepository, checkout::MockCheckoutRepository},
+    repository::{checkout::MockCheckoutRepository, item::MockCommonItemRepository},
 };
 use rstest::rstest;
 use tower::ServiceExt;
@@ -35,7 +35,7 @@ async fn show_book_list_with_query_200(
     let book_id = BookId::new();
 
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_find_all().returning(move |opt| {
             let items = vec![Book {
                 id: book_id,
@@ -79,7 +79,7 @@ async fn show_book_list_with_query_400(
     let book_id = BookId::new();
 
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_find_all().returning(move |opt| {
             let items = vec![Book {
                 id: book_id,
@@ -112,7 +112,7 @@ async fn show_book_list_with_query_400(
 #[tokio::test]
 async fn register_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_create().returning(|_book| Ok(()));
         Arc::new(mock)
     });
@@ -150,7 +150,7 @@ async fn register_book_400(
     #[case] description: &str,
 ) -> anyhow::Result<()> {
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_create().returning(|_book| Ok(()));
         Arc::new(mock)
     });
@@ -180,7 +180,7 @@ async fn register_book_400(
 async fn show_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let book_id = BookId::new();
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_find_by_id().returning(move |_id| {
             Ok(Some(Book {
                 id: book_id,
@@ -216,7 +216,7 @@ async fn show_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Res
 #[tokio::test]
 async fn show_book_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_find_by_id().returning(|_id| Ok(None));
         Arc::new(mock)
     });
@@ -238,7 +238,7 @@ async fn show_book_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Res
 async fn update_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let book_id = BookId::new();
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_update().returning(|_book| Ok(()));
         Arc::new(mock)
     });
@@ -277,7 +277,7 @@ async fn update_book_400(
 ) -> anyhow::Result<()> {
     let book_id = BookId::new();
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_update().returning(|_book| Ok(()));
         Arc::new(mock)
     });
@@ -307,7 +307,7 @@ async fn update_book_400(
 async fn delete_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let book_id = BookId::new();
     fixture.expect_book_repository().returning(move || {
-        let mut mock = MockBookRepository::new();
+        let mut mock = MockCommonItemRepository::new();
         mock.expect_delete().returning(|_book| Ok(()));
         Arc::new(mock)
     });
