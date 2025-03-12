@@ -8,15 +8,15 @@ use adapter::{
     },
 };
 use kernel::repository::{
-    auth::AuthRepository, book::BookRepository, checkout::CheckoutRepository,
-    health::HealthCheckRepository, user::UserRepository,
+    auth::AuthRepository, checkout::CheckoutRepository, health::HealthCheckRepository,
+    item::BookRepository, user::UserRepository,
 };
 use shared::config::AppConfig;
 
 #[derive(Clone)]
 pub struct AppRegistryImpl {
     health_check_repository: Arc<dyn HealthCheckRepository>,
-    book_repository: Arc<dyn BookRepository>,
+    book_repository: BookRepository,
     auth_repository: Arc<dyn AuthRepository>,
     user_repository: Arc<dyn UserRepository>,
     checkout_repository: Arc<dyn CheckoutRepository>,
@@ -46,7 +46,7 @@ impl AppRegistryImpl {
 #[mockall::automock]
 pub trait AppRegistryExt {
     fn health_check_repository(&self) -> Arc<dyn HealthCheckRepository>;
-    fn book_repository(&self) -> Arc<dyn BookRepository>;
+    fn book_repository(&self) -> BookRepository;
     fn auth_repository(&self) -> Arc<dyn AuthRepository>;
     fn user_repository(&self) -> Arc<dyn UserRepository>;
     fn checkout_repository(&self) -> Arc<dyn CheckoutRepository>;
@@ -57,7 +57,7 @@ impl AppRegistryExt for AppRegistryImpl {
         self.health_check_repository.clone()
     }
 
-    fn book_repository(&self) -> Arc<dyn BookRepository> {
+    fn book_repository(&self) -> BookRepository {
         self.book_repository.clone()
     }
 

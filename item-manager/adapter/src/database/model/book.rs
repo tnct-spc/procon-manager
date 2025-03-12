@@ -1,5 +1,6 @@
 use kernel::model::{
-    book::{Book, Checkout},
+    book::Book,
+    checkout::SimpleCheckout,
     id::{BookId, CheckoutId, UserId},
     user::CheckoutUser,
 };
@@ -13,7 +14,7 @@ pub struct BookRow {
 }
 
 impl BookRow {
-    pub fn into_book(self, checkout: Option<Checkout>) -> Book {
+    pub fn into_book(self, checkout: Option<SimpleCheckout>) -> Book {
         Book {
             id: self.book_id,
             title: self.title,
@@ -38,9 +39,9 @@ pub struct BookCheckoutRow {
     pub checked_out_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<BookCheckoutRow> for Checkout {
+impl From<BookCheckoutRow> for SimpleCheckout {
     fn from(value: BookCheckoutRow) -> Self {
-        Checkout {
+        SimpleCheckout {
             checkout_id: value.checkout_id,
             checked_out_by: CheckoutUser {
                 id: value.user_id,

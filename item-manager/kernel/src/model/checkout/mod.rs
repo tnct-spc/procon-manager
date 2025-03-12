@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
-use crate::model::id::{BookId, CheckoutId, UserId};
+use super::id::{BookId, CheckoutId, UserId};
+use super::user::CheckoutUser;
 
 pub mod event;
 
@@ -19,4 +20,11 @@ pub struct CheckoutBook {
     pub title: String,
     pub author: String,
     pub isbn: String,
+}
+
+#[derive(Debug)]
+pub struct SimpleCheckout {
+    pub checkout_id: CheckoutId,
+    pub checked_out_by: CheckoutUser,
+    pub checked_out_at: chrono::DateTime<chrono::Utc>,
 }

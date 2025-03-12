@@ -11,3 +11,9 @@ impl<T> PaginatedList<T> {
         self.items
     }
 }
+
+#[derive(Debug)]
+pub struct ListOptions {
+    pub limit: i64,
+    pub offset: i64,
+}
