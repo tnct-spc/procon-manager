@@ -1,14 +1,26 @@
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS '
   BEGIN
-    new.updated_at := ''now'';
+    new.updated_at := NOW();
     return new;
   END;
 ' LANGUAGE 'plpgsql';
+
+
+CREATE OR REPLACE FUNCTION set_items_updated_at() RETURNS TRIGGER AS '
+  BEGIN
+      UPDATE items
+      SET updated_at = NOW()
+      WHERE item_id = NEW.item_id;
+      RETURN NEW;
+  END;
+' LANGUAGE 'plpgsql';
+
 
 CREATE TABLE IF NOT EXISTS roles (
   role_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL UNIQUE
 );
+
 
 CREATE TABLE IF NOT EXISTS users (
   user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -20,37 +32,54 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
   FOREIGN KEY (role_id) REFERENCES roles(role_id)
-  ON UPDATE CASCADE
-  ON DELETE CASCADE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
 
 CREATE TRIGGER users_updated_at_trigger
   BEFORE UPDATE ON users FOR EACH ROW
   EXECUTE PROCEDURE set_updated_at();
 
-CREATE TABLE IF NOT EXISTS books (
-  book_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(255) NOT NULL,
-  author VARCHAR(255) NOT NULL,
-  isbn VARCHAR(255) NOT NULL,
+
+CREATE TABLE IF NOT EXISTS items (
+  item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
   description VARCHAR(1024) NOT NULL,
+  category VARCHAR(255) NOT NULL CHECK (category IN ('book', 'laptop')),
   created_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
 
+CREATE TRIGGER items_updated_at_trigger
+  BEFORE UPDATE ON items FOR EACH ROW
+  EXECUTE PROCEDURE set_updated_at();
+
+
+CREATE TABLE IF NOT EXISTS books (
+  item_id UUID PRIMARY KEY NOT NULL,
+  author VARCHAR(255) NOT NULL,
+  isbn VARCHAR(255) NOT NULL,
+
+  FOREIGN KEY (item_id) REFERENCES items(item_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
 CREATE TRIGGER books_updated_at_trigger
   BEFORE UPDATE ON books FOR EACH ROW
-  EXECUTE PROCEDURE set_updated_at();
+  EXECUTE PROCEDURE set_items_updated_at();
+
 
 CREATE TABLE IF NOT EXISTS checkouts (
   checkout_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  book_id UUID NOT NULL UNIQUE,
+  item_id UUID NOT NULL,
   user_id UUID NOT NULL,
   checked_out_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-  FOREIGN KEY (book_id) REFERENCES books(book_id)
+  FOREIGN KEY (item_id) REFERENCES items(item_id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
+
   FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON UPDATE CASCADE
     ON DELETE CASCADE
@@ -58,8 +87,16 @@ CREATE TABLE IF NOT EXISTS checkouts (
 
 CREATE TABLE IF NOT EXISTS returned_checkouts (
   checkout_id UUID PRIMARY KEY,
-  book_id UUID NOT NULL,
+  item_id UUID NOT NULL,
   user_id UUID NOT NULL,
   checked_out_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  returned_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+  returned_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+  FOREIGN KEY (item_id) REFERENCES items(item_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );

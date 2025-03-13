@@ -6,7 +6,7 @@ use crate::model::{
         Book,
         event::{CreateBook, DeleteBook, UpdateBook},
     },
-    id::BookId,
+    id::ItemId,
     list::{ListOptions, PaginatedList},
 };
 
@@ -28,4 +28,4 @@ pub trait CommonItemRepository<
 }
 
 pub type BookRepository =
-    std::sync::Arc<dyn CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook>>;
+    std::sync::Arc<dyn CommonItemRepository<Book, ItemId, CreateBook, UpdateBook, DeleteBook>>;

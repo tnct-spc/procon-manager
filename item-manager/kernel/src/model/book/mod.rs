@@ -1,11 +1,11 @@
-use super::{checkout::SimpleCheckout, id::BookId};
+use super::{checkout::SimpleCheckout, id::ItemId};
 
 pub mod event;
 
 #[derive(Debug)]
 pub struct Book {
-    pub id: BookId,
-    pub title: String,
+    pub id: ItemId,
+    pub name: String,
     pub author: String,
     pub isbn: String,
     pub description: String,

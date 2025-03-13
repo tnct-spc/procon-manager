@@ -34,3 +34,13 @@ pub fn connect_database_with(cfg: &DatabaseConfig) -> ConnectionPool {
         cfg,
     )))
 }
+
+pub async fn set_transaction_serializable(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> AppResult<()> {
+    sqlx::query!("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+        .execute(&mut **tx)
+        .await
+        .map_err(AppError::SpecificOperationError)?;
+    Ok(())
+}

@@ -1,13 +1,13 @@
 use kernel::model::{
     book::Book,
     checkout::SimpleCheckout,
-    id::{BookId, CheckoutId, UserId},
+    id::{CheckoutId, ItemId, UserId},
     user::CheckoutUser,
 };
 
 pub struct BookRow {
-    pub book_id: BookId,
-    pub title: String,
+    pub item_id: ItemId,
+    pub name: String,
     pub author: String,
     pub isbn: String,
     pub description: String,
@@ -16,8 +16,8 @@ pub struct BookRow {
 impl BookRow {
     pub fn into_book(self, checkout: Option<SimpleCheckout>) -> Book {
         Book {
-            id: self.book_id,
-            title: self.title,
+            id: self.item_id,
+            name: self.name,
             author: self.author,
             isbn: self.isbn,
             description: self.description,
@@ -28,12 +28,12 @@ impl BookRow {
 
 pub struct PaginatedBookRow {
     pub total: i64,
-    pub id: BookId,
+    pub id: ItemId,
 }
 
 pub struct BookCheckoutRow {
     pub checkout_id: CheckoutId,
-    pub book_id: BookId,
+    pub item_id: ItemId,
     pub user_id: UserId,
     pub user_name: String,
     pub checked_out_at: chrono::DateTime<chrono::Utc>,
