@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use derive_new::new;
-use kernel::model::id::BookId;
+use kernel::model::id::ItemId;
 use kernel::model::list::{ListOptions, PaginatedList};
 use kernel::model::{
     book::{
@@ -15,6 +15,7 @@ use kernel::repository::item::CommonItemRepository;
 use shared::error::{AppError, AppResult};
 
 use crate::database::model::book::{BookRow, PaginatedBookRow};
+use crate::database::set_transaction_serializable;
 use crate::database::{ConnectionPool, model::book::BookCheckoutRow};
 
 #[derive(new)]
@@ -23,21 +24,43 @@ pub struct BookRepositoryImpl {
 }
 
 #[async_trait]
-impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for BookRepositoryImpl {
+impl CommonItemRepository<Book, ItemId, CreateBook, UpdateBook, DeleteBook> for BookRepositoryImpl {
     async fn create(&self, event: CreateBook) -> AppResult<()> {
-        sqlx::query!(
+        let mut tx = self.db.begin().await?;
+
+        set_transaction_serializable(&mut tx).await?;
+
+        let item_id = sqlx::query!(
             r#"
-                INSERT INTO books (title, author, isbn, description)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO items (name, description, category)
+                VALUES ($1, $2, 'book')
+                RETURNING item_id
             "#,
-            event.title,
-            event.author,
-            event.isbn,
+            event.name,
             event.description,
         )
-        .execute(self.db.inner_ref())
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(AppError::SpecificOperationError)?
+        .item_id;
+
+        eprintln!("item_id: {:?}", item_id);
+
+        sqlx::query!(
+            r#"
+                INSERT INTO books (item_id, author, isbn)
+                VALUES ($1, $2, $3)
+            "#,
+            item_id,
+            event.author,
+            event.isbn,
+        )
+        .execute(&mut *tx)
         .await
         .map_err(AppError::SpecificOperationError)?;
+
+        tx.commit().await.map_err(AppError::TransactionError)?;
+
         Ok(())
     }
 
@@ -48,9 +71,10 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
             r#"
                 SELECT
                 COUNT(*) OVER() AS "total!",
-                b.book_id AS id
+                b.item_id AS id
                 FROM books AS b
-                ORDER BY b.created_at DESC
+                JOIN items AS i ON b.item_id = i.item_id
+                ORDER BY i.created_at DESC
                 LIMIT $1
                 OFFSET $2
             "#,
@@ -62,34 +86,35 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
         .map_err(AppError::SpecificOperationError)?;
 
         let total = rows.first().map(|r| r.total).unwrap_or_default(); // If there are no records, then total is also 0.
-        let book_ids = rows.into_iter().map(|r| r.id).collect::<Vec<BookId>>();
+        let item_ids = rows.into_iter().map(|r| r.id).collect::<Vec<ItemId>>();
 
         let rows: Vec<BookRow> = sqlx::query_as!(
             BookRow,
             r#"
                 SELECT
-                    b.book_id AS book_id,
-                    b.title AS title,
+                    b.item_id AS item_id,
+                    i.name AS name,
                     b.author AS author,
                     b.isbn AS isbn,
-                    b.description AS description
+                    i.description AS description
                 FROM books AS b
-                WHERE b.book_id IN (SELECT * FROM UNNEST($1::uuid[]))
-                ORDER BY b.created_at DESC
+                JOIN items AS i ON b.item_id = i.item_id
+                WHERE b.item_id IN (SELECT * FROM UNNEST($1::uuid[]))
+                ORDER BY i.created_at DESC
             "#,
-            &book_ids as _
+            &item_ids as _
         )
         .fetch_all(self.db.inner_ref())
         .await
         .map_err(AppError::SpecificOperationError)?;
 
-        let book_ids = rows.iter().map(|r| r.book_id).collect::<Vec<BookId>>();
-        let mut checkouts = self.find_checkouts(&book_ids).await?;
+        let item_ids = rows.iter().map(|r| r.item_id).collect::<Vec<ItemId>>();
+        let mut checkouts = self.find_checkouts(&item_ids).await?;
 
         let items = rows
             .into_iter()
             .map(|row| {
-                let checkout = checkouts.remove(&row.book_id);
+                let checkout = checkouts.remove(&row.item_id);
                 row.into_book(checkout)
             })
             .collect();
@@ -102,20 +127,21 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
         })
     }
 
-    async fn find_by_id(&self, book_id: BookId) -> AppResult<Option<Book>> {
+    async fn find_by_id(&self, item_id: ItemId) -> AppResult<Option<Book>> {
         let row: Option<BookRow> = sqlx::query_as!(
             BookRow,
             r#"
                 SELECT
-                    b.book_id AS book_id,
-                    b.title AS title,
+                    b.item_id AS item_id,
+                    i.name AS name,
                     b.author AS author,
                     b.isbn AS isbn,
-                    b.description AS description
+                    i.description AS description
                 FROM books AS b
-                WHERE b.book_id = $1
+                JOIN items AS i ON b.item_id = i.item_id
+                WHERE b.item_id = $1
             "#,
-            book_id.raw()
+            item_id.raw()
         )
         .fetch_optional(self.db.inner_ref())
         .await
@@ -123,7 +149,7 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
 
         match row {
             Some(row) => {
-                let checkout = self.find_checkouts(&[book_id]).await?.remove(&book_id);
+                let checkout = self.find_checkouts(&[item_id]).await?.remove(&item_id);
                 Ok(Some(row.into_book(checkout)))
             }
             None => Ok(None),
@@ -131,25 +157,44 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
     }
 
     async fn update(&self, event: UpdateBook) -> AppResult<()> {
+        let mut tx = self.db.begin().await?;
+
+        set_transaction_serializable(&mut tx).await?;
+
+        sqlx::query!(
+            r#"
+                UPDATE items
+                SET
+                    name = $1,
+                    description = $2
+                WHERE item_id = $3
+            "#,
+            event.name,
+            event.description,
+            event.item_id.raw(),
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::SpecificOperationError)?;
+
         let res = sqlx::query!(
             r#"
                 UPDATE books
                 SET
-                    title = $1,
-                    author = $2,
-                    isbn = $3,
-                    description = $4
-                WHERE book_id = $5
+                    author = $1,
+                    isbn = $2
+                WHERE item_id = $3
             "#,
-            event.title,
             event.author,
             event.isbn,
-            event.description,
-            event.book_id.raw(),
+            event.item_id.raw(),
         )
-        .execute(self.db.inner_ref())
+        .execute(&mut *tx)
         .await
         .map_err(AppError::SpecificOperationError)?;
+
+        tx.commit().await.map_err(AppError::TransactionError)?;
+
         if res.rows_affected() < 1 {
             return Err(AppError::EntityNotFound("specified book not found".into()));
         }
@@ -160,10 +205,10 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
     async fn delete(&self, event: DeleteBook) -> AppResult<()> {
         let res = sqlx::query!(
             r#"
-                DELETE FROM books
-                WHERE book_id = $1
+                DELETE FROM items
+                WHERE item_id = $1
             "#,
-            event.book_id.raw(),
+            event.item_id.raw(),
         )
         .execute(self.db.inner_ref())
         .await
@@ -180,29 +225,29 @@ impl CommonItemRepository<Book, BookId, CreateBook, UpdateBook, DeleteBook> for 
 impl BookRepositoryImpl {
     async fn find_checkouts(
         &self,
-        book_ids: &[BookId],
-    ) -> AppResult<HashMap<BookId, SimpleCheckout>> {
+        item_ids: &[ItemId],
+    ) -> AppResult<HashMap<ItemId, SimpleCheckout>> {
         let res = sqlx::query_as!(
             BookCheckoutRow,
             r#"
                 SELECT
                     c.checkout_id,
-                    c.book_id,
+                    c.item_id,
                     u.user_id,
                     u.name AS user_name,
                     c.checked_out_at
                 FROM checkouts AS c
                 INNER JOIN users AS u USING(user_id)
-                WHERE book_id = ANY($1)
+                WHERE item_id = ANY($1)
                 ;
             "#,
-            book_ids as _
+            item_ids as _
         )
         .fetch_all(self.db.inner_ref())
         .await
         .map_err(AppError::SpecificOperationError)?
         .into_iter()
-        .map(|row| (row.book_id, SimpleCheckout::from(row)))
+        .map(|row| (row.item_id, SimpleCheckout::from(row)))
         .collect();
 
         Ok(res)
@@ -230,7 +275,7 @@ mod tests {
     async fn test_register_book(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = BookRepositoryImpl::new(ConnectionPool::new(pool.clone()));
         let book = CreateBook {
-            title: "Test Title".into(),
+            name: "Test Title".into(),
             author: "Test Author".into(),
             isbn: "Test ISBN".into(),
             description: "Test Description".into(),
@@ -242,19 +287,19 @@ mod tests {
         };
         let res = repo.find_all(options).await?;
         assert_eq!(res.items.len(), 1);
-        let book_id = res.items[0].id;
-        let res = repo.find_by_id(book_id).await?;
+        let item_id = res.items[0].id;
+        let res = repo.find_by_id(item_id).await?;
         assert!(res.is_some());
         let Book {
             id,
-            title,
+            name,
             author,
             isbn,
             description,
             ..
         } = res.unwrap();
-        assert_eq!(id, book_id);
-        assert_eq!(title, "Test Title");
+        assert_eq!(id, item_id);
+        assert_eq!(name, "Test Title");
         assert_eq!(author, "Test Author");
         assert_eq!(isbn, "Test ISBN");
         assert_eq!(description, "Test Description");
@@ -264,21 +309,21 @@ mod tests {
     #[sqlx::test(fixtures("common", "book"))]
     async fn test_update_book(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = BookRepositoryImpl::new(ConnectionPool::new(pool.clone()));
-        let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b").unwrap();
-        let book = repo.find_by_id(book_id).await?.unwrap();
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b").unwrap();
+        let book = repo.find_by_id(item_id).await?.unwrap();
         const NEW_AUTHOR: &str = "Updated Author";
         assert_ne!(book.author, NEW_AUTHOR);
 
         let update_book = UpdateBook {
-            book_id: book.id,
-            title: book.title,
+            item_id: book.id,
+            name: book.name,
             author: NEW_AUTHOR.into(), // This is the difference
             isbn: book.isbn,
             description: book.description,
         };
         repo.update(update_book).await.unwrap();
 
-        let book = repo.find_by_id(book_id).await?.unwrap();
+        let book = repo.find_by_id(item_id).await?.unwrap();
         assert_eq!(book.author, NEW_AUTHOR);
 
         Ok(())
@@ -287,10 +332,10 @@ mod tests {
     #[sqlx::test(fixtures("common", "book"))]
     async fn test_delete_book(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = BookRepositoryImpl::new(ConnectionPool::new(pool.clone()));
-        let book_id = BookId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
 
-        repo.delete(DeleteBook { book_id }).await?;
-        let book = repo.find_by_id(book_id).await?;
+        repo.delete(DeleteBook { item_id }).await?;
+        let book = repo.find_by_id(item_id).await?;
 
         assert!(book.is_none());
 
@@ -312,7 +357,7 @@ mod tests {
         assert_eq!(res.total, LEN);
         assert_eq!(res.limit, 10);
         assert_eq!(res.offset, 0);
-        assert_eq!(res.items[0].title, "title050");
+        assert_eq!(res.items[0].name, "title050");
 
         let res = repo
             .find_all(ListOptions {
@@ -323,7 +368,7 @@ mod tests {
         assert_eq!(res.total, LEN);
         assert_eq!(res.limit, 10);
         assert_eq!(res.offset, 10);
-        assert_eq!(res.items[0].title, "title040");
+        assert_eq!(res.items[0].name, "title040");
 
         let res = repo
             .find_all(ListOptions {
@@ -363,7 +408,7 @@ mod tests {
         {
             checkout_repo
                 .create(CreateCheckout {
-                    book_id: book.id,
+                    item_id: book.id,
                     checked_out_by: user_id1,
                     checked_out_at: Utc::now(),
                 })
@@ -377,7 +422,7 @@ mod tests {
             checkout_repo
                 .update_returned(UpdateReturned {
                     checkout_id: co.checkout_id,
-                    book_id: book_co.id,
+                    item_id: book_co.id,
                     returned_by: user_id1,
                     returned_at: Utc::now(),
                 })
@@ -390,7 +435,7 @@ mod tests {
         {
             checkout_repo
                 .create(CreateCheckout {
-                    book_id: book.id,
+                    item_id: book.id,
                     checked_out_by: user_id2,
                     checked_out_at: Utc::now(),
                 })
@@ -404,7 +449,7 @@ mod tests {
             checkout_repo
                 .update_returned(UpdateReturned {
                     checkout_id: co.checkout_id,
-                    book_id: book_co.id,
+                    item_id: book_co.id,
                     returned_by: user_id2,
                     returned_at: Utc::now(),
                 })

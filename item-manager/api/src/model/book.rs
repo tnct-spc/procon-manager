@@ -6,7 +6,7 @@ use kernel::model::{
         event::{CreateBook, UpdateBook},
     },
     checkout::SimpleCheckout,
-    id::{BookId, CheckoutId},
+    id::{CheckoutId, ItemId},
     list::PaginatedList,
 };
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ use super::user::CheckoutUser;
 #[serde(rename_all = "camelCase")]
 pub struct CreateBookRequest {
     #[garde(length(min = 1))]
-    pub title: String,
+    pub name: String,
     #[garde(length(min = 1))]
     pub author: String,
     #[garde(length(min = 1))]
@@ -29,13 +29,13 @@ pub struct CreateBookRequest {
 impl From<CreateBookRequest> for CreateBook {
     fn from(value: CreateBookRequest) -> Self {
         let CreateBookRequest {
-            title,
+            name,
             author,
             isbn,
             description,
         } = value;
         CreateBook {
-            title,
+            name,
             author,
             isbn,
             description,
@@ -47,7 +47,7 @@ impl From<CreateBookRequest> for CreateBook {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateBookRequest {
     #[garde(length(min = 1))]
-    pub title: String,
+    pub name: String,
     #[garde(length(min = 1))]
     pub author: String,
     #[garde(length(min = 1))]
@@ -57,21 +57,21 @@ pub struct UpdateBookRequest {
 }
 
 #[derive(new)]
-pub struct UpdateBookRequestWithIds(BookId, UpdateBookRequest);
+pub struct UpdateBookRequestWithIds(ItemId, UpdateBookRequest);
 impl From<UpdateBookRequestWithIds> for UpdateBook {
     fn from(value: UpdateBookRequestWithIds) -> Self {
         let UpdateBookRequestWithIds(
-            book_id,
+            item_id,
             UpdateBookRequest {
-                title,
+                name,
                 author,
                 isbn,
                 description,
             },
         ) = value;
         UpdateBook {
-            book_id,
-            title,
+            item_id,
+            name,
             author,
             isbn,
             description,
@@ -82,8 +82,8 @@ impl From<UpdateBookRequestWithIds> for UpdateBook {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BookResponse {
-    pub id: BookId,
-    pub title: String,
+    pub id: ItemId,
+    pub name: String,
     pub author: String,
     pub isbn: String,
     pub description: String,
@@ -94,7 +94,7 @@ impl From<Book> for BookResponse {
     fn from(value: Book) -> Self {
         Self {
             id: value.id,
-            title: value.title,
+            name: value.name,
             author: value.author,
             isbn: value.isbn,
             description: value.description,

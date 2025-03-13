@@ -5,7 +5,7 @@ use axum::{
 };
 use kernel::model::{
     checkout::event::{CreateCheckout, UpdateReturned},
-    id::{BookId, CheckoutId},
+    id::{CheckoutId, ItemId},
 };
 use registry::AppRegistry;
 use shared::error::AppResult;
@@ -14,10 +14,10 @@ use crate::{extractor::AuthorizedUser, model::checkout::CheckoutsResponse};
 
 pub async fn checkout_book(
     user: AuthorizedUser,
-    Path(book_id): Path<BookId>,
+    Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
-    let create_checkout_history = CreateCheckout::new(book_id, user.id(), chrono::Utc::now());
+    let create_checkout_history = CreateCheckout::new(item_id, user.id(), chrono::Utc::now());
 
     registry
         .checkout_repository()
@@ -28,10 +28,10 @@ pub async fn checkout_book(
 
 pub async fn return_book(
     user: AuthorizedUser,
-    Path((book_id, checkout_id)): Path<(BookId, CheckoutId)>,
+    Path((item_id, checkout_id)): Path<(ItemId, CheckoutId)>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
-    let update_returned = UpdateReturned::new(checkout_id, book_id, user.id(), chrono::Utc::now());
+    let update_returned = UpdateReturned::new(checkout_id, item_id, user.id(), chrono::Utc::now());
 
     registry
         .checkout_repository()
@@ -54,12 +54,12 @@ pub async fn show_checked_out_list(
 
 pub async fn checkout_history(
     _user: AuthorizedUser,
-    Path(book_id): Path<BookId>,
+    Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<Json<CheckoutsResponse>> {
     registry
         .checkout_repository()
-        .find_history_by_book_id(book_id)
+        .find_history_by_item_id(item_id)
         .await
         .map(CheckoutsResponse::from)
         .map(Json)

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use kernel::model::{
-    checkout::{Checkout, CheckoutBook},
-    id::{BookId, CheckoutId, UserId},
+    checkout::Checkout,
+    id::{CheckoutId, ItemId, UserId},
 };
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ pub struct CheckoutResponse {
     pub checked_out_by: UserId,
     pub checked_out_at: DateTime<Utc>,
     pub returned_at: Option<DateTime<Utc>>,
-    pub book: CheckoutBookResponse,
+    pub item_id: ItemId,
 }
 
 impl From<Checkout> for CheckoutResponse {
@@ -36,7 +36,7 @@ impl From<Checkout> for CheckoutResponse {
             checked_out_by: value.checked_out_by,
             checked_out_at: value.checked_out_at,
             returned_at: value.returned_at,
-            book: value.book.into(),
+            item_id: value.item_id,
         }
     }
 }
@@ -44,19 +44,8 @@ impl From<Checkout> for CheckoutResponse {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckoutBookResponse {
-    pub id: BookId,
+    pub id: ItemId,
     pub title: String,
     pub author: String,
     pub isbn: String,
-}
-
-impl From<CheckoutBook> for CheckoutBookResponse {
-    fn from(value: CheckoutBook) -> Self {
-        Self {
-            id: value.book_id,
-            title: value.title,
-            author: value.author,
-            isbn: value.isbn,
-        }
-    }
 }

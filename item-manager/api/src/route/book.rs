@@ -13,18 +13,18 @@ pub fn routes() -> Router<AppRegistry> {
     let books_routers = Router::new()
         .route("/", get(show_book_list))
         .route("/", post(register_book))
-        .route("/{book_id}", get(show_book))
-        .route("/{book_id}", put(update_book))
-        .route("/{book_id}", delete(delete_book));
+        .route("/{item_id}", get(show_book))
+        .route("/{item_id}", put(update_book))
+        .route("/{item_id}", delete(delete_book));
 
     let checkout_router = Router::new()
         .route("/checkouts", get(show_checked_out_list))
-        .route("/{book_id}/checkouts", post(checkout_book))
+        .route("/{item_id}/checkouts", post(checkout_book))
         .route(
-            "/{book_id}/checkouts/{checkout_id}/returned",
+            "/{item_id}/checkouts/{checkout_id}/returned",
             put(return_book),
         )
-        .route("/{book_id}/checkout-history", get(checkout_history));
+        .route("/{item_id}/checkout-history", get(checkout_history));
 
     Router::new().nest("/books", books_routers.merge(checkout_router))
 }
