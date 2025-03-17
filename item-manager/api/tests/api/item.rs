@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
-use api::model::book::{BookResponse, CreateBookRequest, PaginatedBookResponse, UpdateBookRequest};
-use api::model::checkout::CheckoutsResponse;
+use api::model::{
+    checkout::CheckoutsResponse,
+    item::{CreateItemRequest, ItemResponse, PaginatedItemResponse, UpdateItemRequest},
+};
 use axum::{body::Body, http::Request};
 use kernel::{
     model::{
-        book::Book,
         checkout::Checkout,
         id::{CheckoutId, ItemId, UserId},
+        item::{Item, ItemCategory, book::Book},
         list::PaginatedList,
     },
-    repository::{checkout::MockCheckoutRepository, item::MockCommonItemRepository},
+    repository::{checkout::MockCheckoutRepository, item::MockItemRepository},
 };
 use rstest::rstest;
 use tower::ServiceExt;
@@ -21,30 +23,32 @@ use crate::{
 };
 
 #[rstest]
-#[case("/books", 20, 0)]
-#[case("/books?limit=50", 50, 0)]
-#[case("/books?limit=50&offset=20", 50, 20)]
-#[case("/books?offset=20", 20, 20)]
+#[case("/items", None, 20, 0)]
+#[case("/items?category=book", Some(ItemCategory::Book), 20, 0)]
+#[case("/items?limit=50", None, 50, 0)]
+#[case("/items?limit=50&offset=20", None, 50, 20)]
 #[tokio::test]
-async fn show_book_list_with_query_200(
+async fn list_items_200(
     mut fixture: registry::MockAppRegistryExt,
     #[case] path: &str,
+    #[case] category: Option<ItemCategory>,
     #[case] expected_limit: i64,
     #[case] expected_offset: i64,
 ) -> anyhow::Result<()> {
     let item_id = ItemId::new();
 
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
         mock.expect_find_all().returning(move |opt| {
-            let items = vec![Book {
+            assert_eq!(opt.category, category.clone());
+            let items = vec![Item::Book(Book {
                 id: item_id,
                 name: "RustによるWebアプリケーション開発".into(),
                 isbn: "".into(),
                 author: "Yuki Toyoda".into(),
                 description: "RustによるWebアプリケーション開発".into(),
                 checkout: None,
-            }];
+            })];
             Ok(PaginatedList {
                 total: 1,
                 limit: opt.limit,
@@ -61,7 +65,7 @@ async fn show_book_list_with_query_200(
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::OK);
 
-    let result = deserialize_json!(resp, PaginatedBookResponse);
+    let result = deserialize_json!(resp, PaginatedItemResponse);
     assert_eq!(result.limit, expected_limit);
     assert_eq!(result.offset, expected_offset);
 
@@ -69,36 +73,13 @@ async fn show_book_list_with_query_200(
 }
 
 #[rstest]
-#[case("/books?limit=-1")]
-#[case("/books?offset=aaa")]
+#[case("/items?limit=-1")]
+#[case("/items?offset=aaa")]
 #[tokio::test]
-async fn show_book_list_with_query_400(
-    mut fixture: registry::MockAppRegistryExt,
+async fn list_items_400(
+    fixture: registry::MockAppRegistryExt,
     #[case] path: &str,
 ) -> anyhow::Result<()> {
-    let item_id = ItemId::new();
-
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_find_all().returning(move |opt| {
-            let items = vec![Book {
-                id: item_id,
-                name: "RustによるWebアプリケーション開発".into(),
-                isbn: "".into(),
-                author: "Yuki Toyoda".into(),
-                description: "RustによるWebアプリケーション開発".into(),
-                checkout: None,
-            }];
-            Ok(PaginatedList {
-                total: 1,
-                limit: opt.limit,
-                offset: opt.offset,
-                items,
-            })
-        });
-        Arc::new(mock)
-    });
-
     let app: axum::Router = make_router(fixture);
 
     let req = Request::get(v1(path)).bearer().body(Body::empty())?;
@@ -110,23 +91,23 @@ async fn show_book_list_with_query_400(
 
 #[rstest]
 #[tokio::test]
-async fn register_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_create().returning(|_book| Ok(()));
+async fn create_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
+        mock.expect_create().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
     let app = make_router(fixture);
 
-    let req = CreateBookRequest {
+    let req = CreateItemRequest::Book {
         name: "Test Book".into(),
         author: "Test Author".into(),
         isbn: "1234567890123".into(),
         description: "Test Description".into(),
     };
 
-    let req = Request::post(v1("/books"))
+    let req = Request::post(v1("/items"))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -138,33 +119,27 @@ async fn register_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow:
 }
 
 #[rstest]
-#[case("", "Test Author", "1234567890123", "Test Description")] // title empty
+#[case("", "Test Author", "1234567890123", "Test Description")] // name empty
 #[case("Test Book", "", "1234567890123", "Test Description")] // author empty
 #[case("Test Book", "Test Author", "", "Test Description")] // ISBN empty
 #[tokio::test]
-async fn register_book_400(
-    mut fixture: registry::MockAppRegistryExt,
+async fn create_item_400(
+    fixture: registry::MockAppRegistryExt,
     #[case] name: &str,
     #[case] author: &str,
     #[case] isbn: &str,
     #[case] description: &str,
 ) -> anyhow::Result<()> {
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_create().returning(|_book| Ok(()));
-        Arc::new(mock)
-    });
-
     let app = make_router(fixture);
 
-    let req = CreateBookRequest {
+    let req = CreateItemRequest::Book {
         name: name.into(),
         author: author.into(),
         isbn: isbn.into(),
         description: description.into(),
     };
 
-    let req = Request::post(v1("/books"))
+    let req = Request::post(v1("/items"))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -177,53 +152,58 @@ async fn register_book_400(
 
 #[rstest]
 #[tokio::test]
-async fn show_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn get_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
         mock.expect_find_by_id().returning(move |_id| {
-            Ok(Some(Book {
+            Ok(Some(Item::Book(Book {
                 id: item_id,
                 name: "Test Book".into(),
                 isbn: "1234567890123".into(),
                 author: "Test Author".into(),
                 description: "Test Description".into(),
                 checkout: None,
-            }))
+            })))
         });
         Arc::new(mock)
     });
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1(&format!("/books/{}", item_id)))
+    let req = Request::get(v1(&format!("/items/{}", item_id)))
         .bearer()
         .body(Body::empty())?;
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::OK);
 
-    let result = deserialize_json!(resp, BookResponse);
-    assert_eq!(result.name, "Test Book");
-    assert_eq!(result.author, "Test Author");
-    assert_eq!(result.isbn, "1234567890123");
-    assert_eq!(result.description, "Test Description");
+    let result = deserialize_json!(resp, ItemResponse);
+    match result {
+        ItemResponse::Book(book) => {
+            assert_eq!(book.name, "Test Book");
+            assert_eq!(book.author, "Test Author");
+            assert_eq!(book.isbn, "1234567890123");
+            assert_eq!(book.description, "Test Description");
+        }
+        _ => panic!("Expected BookResponse"),
+    }
 
     Ok(())
 }
 
 #[rstest]
 #[tokio::test]
-async fn show_book_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
+async fn get_item_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
         mock.expect_find_by_id().returning(|_id| Ok(None));
         Arc::new(mock)
     });
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1(&format!("/books/{}", ItemId::new())))
+    let req = Request::get(v1(&format!("/items/{}", ItemId::new())))
         .bearer()
         .body(Body::empty())?;
 
@@ -235,24 +215,24 @@ async fn show_book_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Res
 
 #[rstest]
 #[tokio::test]
-async fn update_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn update_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_update().returning(|_book| Ok(()));
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
+        mock.expect_update().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
     let app = make_router(fixture);
 
-    let req = UpdateBookRequest {
+    let req = UpdateItemRequest::Book {
         name: "Updated Title".into(),
         author: "Updated Author".into(),
         isbn: "1234567890123".into(),
         description: "Updated Description".into(),
     };
 
-    let req = Request::put(v1(&format!("/books/{}", item_id)))
+    let req = Request::put(v1(&format!("/items/{}", item_id)))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -264,34 +244,28 @@ async fn update_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
 }
 
 #[rstest]
-#[case("", "Test Author", "1234567890123", "Test Description")] // title empty
+#[case("", "Test Author", "1234567890123", "Test Description")] // name empty
 #[case("Test Book", "", "1234567890123", "Test Description")] // author empty
 #[case("Test Book", "Test Author", "", "Test Description")] // ISBN empty
 #[tokio::test]
-async fn update_book_400(
-    mut fixture: registry::MockAppRegistryExt,
+async fn update_item_400(
+    fixture: registry::MockAppRegistryExt,
     #[case] name: &str,
     #[case] author: &str,
     #[case] isbn: &str,
     #[case] description: &str,
 ) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_update().returning(|_book| Ok(()));
-        Arc::new(mock)
-    });
-
     let app = make_router(fixture);
 
-    let req = UpdateBookRequest {
+    let req = UpdateItemRequest::Book {
         name: name.into(),
         author: author.into(),
         isbn: isbn.into(),
         description: description.into(),
     };
 
-    let req = Request::put(v1(&format!("/books/{}", item_id)))
+    let req = Request::put(v1(&format!("/items/{}", item_id)))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -304,17 +278,17 @@ async fn update_book_400(
 
 #[rstest]
 #[tokio::test]
-async fn delete_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn delete_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_book_repository().returning(move || {
-        let mut mock = MockCommonItemRepository::new();
-        mock.expect_delete().returning(|_book| Ok(()));
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
+        mock.expect_delete().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
     let app = make_router(fixture);
 
-    let req = Request::delete(v1(&format!("/books/{}", item_id)))
+    let req = Request::delete(v1(&format!("/items/{}", item_id)))
         .bearer()
         .body(Body::empty())?;
 
@@ -350,7 +324,7 @@ async fn show_checked_out_list_200(
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1("/books/checkouts"))
+    let req = Request::get(v1("/items/checkouts"))
         .bearer()
         .body(Body::empty())?;
 
@@ -371,7 +345,7 @@ async fn show_checked_out_list_200(
 
 #[rstest]
 #[tokio::test]
-async fn checkout_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn checkout_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
     fixture.expect_checkout_repository().returning(move || {
         let mut mock = MockCheckoutRepository::new();
@@ -381,7 +355,7 @@ async fn checkout_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow:
 
     let app = make_router(fixture);
 
-    let req = Request::post(v1(&format!("/books/{}/checkouts", item_id)))
+    let req = Request::post(v1(&format!("/items/{}/checkouts", item_id)))
         .bearer()
         .body(Body::empty())?;
 
@@ -393,7 +367,7 @@ async fn checkout_book_201(mut fixture: registry::MockAppRegistryExt) -> anyhow:
 
 #[rstest]
 #[tokio::test]
-async fn return_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn return_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
     let checkout_id = CheckoutId::new();
     fixture.expect_checkout_repository().returning(move || {
@@ -405,7 +379,7 @@ async fn return_book_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
     let app = make_router(fixture);
 
     let req = Request::put(v1(&format!(
-        "/books/{}/checkouts/{}/returned",
+        "/items/{}/checkouts/{}/returned",
         item_id, checkout_id
     )))
     .bearer()
@@ -441,7 +415,7 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1(&format!("/books/{}/checkout-history", item_id)))
+    let req = Request::get(v1(&format!("/items/{}/checkout-history", item_id)))
         .bearer()
         .body(Body::empty())?;
 

@@ -50,13 +50,13 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                     ..
                 }) => {
                     return Err(AppError::UnprocessableEntity(format!(
-                        "The book ({}) has already been checked out.",
+                        "The item ({}) has already been checked out.",
                         event.item_id
                     )));
                 }
                 None => {
                     return Err(AppError::EntityNotFound(format!(
-                        "Book ({}) not found.",
+                        "Item ({}) not found.",
                         event.item_id
                     )));
                 }
@@ -120,13 +120,13 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                     ..
                 }) if (c, u) != (event.checkout_id, event.returned_by) => {
                     return Err(AppError::UnprocessableEntity(format!(
-                        "Designated checkout (id({}), users({}), books({})) cannot be returned",
+                        "Designated checkout (id({}), users({}), items({})) cannot be returned",
                         event.checkout_id, event.returned_by, event.item_id
                     )));
                 }
                 None => {
                     return Err(AppError::EntityNotFound(format!(
-                        "Book ({}) not found.",
+                        "Item ({}) not found.",
                         event.item_id
                     )));
                 }
@@ -283,12 +283,12 @@ mod tests {
 
     use super::*;
 
-    #[sqlx::test(fixtures("common", "book_checkout"))]
+    #[sqlx::test(fixtures("common", "item"))]
     async fn test_checkout_flow(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
 
         // Test basic checkout flow
-        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
         let user_id = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
         let checkout_time = Utc::now();
 
@@ -301,17 +301,21 @@ mod tests {
         repo.create(event).await?;
 
         // Verify unreturned checkout exists
+        // Test initial checkout state
         let unreturned = repo.find_unreturned_by_user_id(user_id).await?;
         assert_eq!(unreturned.len(), 1);
-        assert_eq!(unreturned[0].item_id, item_id);
-        assert_eq!(unreturned[0].checked_out_by, user_id);
+        let checkout = &unreturned[0];
+        assert_eq!(checkout.item_id, item_id);
+        assert_eq!(checkout.checked_out_by, user_id);
+        assert!(checkout.returned_at.is_none());
 
-        // Test checkout history
+        // Test initial checkout history
         let history = repo.find_history_by_item_id(item_id).await?;
         assert_eq!(history.len(), 1);
         assert_eq!(history[0].item_id, item_id);
+        assert!(history[0].returned_at.is_none());
 
-        // Return the book
+        // Return the item
         let return_time = Utc::now();
         let event = UpdateReturned {
             checkout_id: unreturned[0].id,
@@ -333,10 +337,10 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(fixtures("common", "book_checkout"))]
+    #[sqlx::test(fixtures("common", "item"))]
     async fn test_checkout_errors(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
-        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
         let user_id1 = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
         let user_id2 = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5")?;
         let checkout_time = Utc::now();
@@ -357,7 +361,7 @@ mod tests {
         };
         assert!(repo.create(event).await.is_err());
 
-        // Test non-existent book checkout
+        // Test non-existent item checkout
         let non_existent_item_id = ItemId::new();
         let event = CreateCheckout {
             item_id: non_existent_item_id,
@@ -379,10 +383,10 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(fixtures("common", "book_checkout"))]
+    #[sqlx::test(fixtures("common", "item"))]
     async fn test_find_operations(pool: sqlx::PgPool) -> anyhow::Result<()> {
         let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
-        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef11b")?;
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
         let user_id1 = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
         let user_id2 = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5")?;
         let checkout_time = Utc::now();
@@ -405,7 +409,7 @@ mod tests {
         let user2_unreturned = repo.find_unreturned_by_user_id(user_id2).await?;
         assert_eq!(user2_unreturned.len(), 0);
 
-        // Return the book
+        // Return the item
         let event = UpdateReturned {
             checkout_id: all_unreturned[0].id,
             item_id,
@@ -414,10 +418,33 @@ mod tests {
         };
         repo.update_returned(event).await?;
 
-        // Test history
+        // Test multiple checkout history
+        // Create another checkout
+        let event = CreateCheckout {
+            item_id,
+            checked_out_by: user_id1,
+            checked_out_at: Utc::now(),
+        };
+        repo.create(event).await?;
+
+        let second_checkout = repo.find_unreturned_by_user_id(user_id1).await?[0].clone();
+
+        // Return second checkout
+        let event = UpdateReturned {
+            checkout_id: second_checkout.id,
+            item_id,
+            returned_by: user_id1,
+            returned_at: Utc::now(),
+        };
+        repo.update_returned(event).await?;
+
+        // Verify history contains both checkouts in correct order
         let history = repo.find_history_by_item_id(item_id).await?;
-        assert_eq!(history.len(), 1);
-        assert_eq!(history[0].item_id, item_id);
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0].item_id, item_id); // Most recent first
+        assert_eq!(history[1].item_id, item_id);
+        assert!(history[0].returned_at.is_some());
+        assert!(history[1].returned_at.is_some());
 
         Ok(())
     }

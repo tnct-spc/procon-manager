@@ -10,6 +10,7 @@ chrono.workspace = true
 derive-new.workspace = true
 garde.workspace = true
 kernel.workspace = true
+mac_address.workspace = true
 registry.workspace = true
 serde.workspace = true
 shared.workspace = true

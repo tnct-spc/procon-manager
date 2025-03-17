@@ -5,7 +5,7 @@ use super::user::CheckoutUser;
 
 pub mod event;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Checkout {
     pub id: CheckoutId,
     pub checked_out_by: UserId,
@@ -14,7 +14,7 @@ pub struct Checkout {
     pub item_id: ItemId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SimpleCheckout {
     pub checkout_id: CheckoutId,
     pub checked_out_by: CheckoutUser,

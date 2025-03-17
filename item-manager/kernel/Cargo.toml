@@ -7,6 +7,7 @@ version = "0.1.0"
 async-trait.workspace = true
 chrono.workspace = true
 derive-new.workspace = true
+mac_address.workspace = true
 mockall.workspace = true
 serde.workspace = true
 shared.workspace = true

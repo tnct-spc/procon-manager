@@ -22,6 +22,7 @@ chrono = { version = "0.4.40", default-features = false, features = ["serde"] }
 derive-new = "0.7.0"
 garde = { version = "0.22.0", features = ["derive", "email"] }
 kernel = { path = "./kernel" }
+mac_address = { version = "1.0.1", features = ["serde"] }
 mockall = "0.13.1"
 registry = { path = "./registry" }
 serde = { version = "1.0.217", features = ["derive"] }
@@ -33,6 +34,7 @@ sqlx = { version = "0.8.3", features = [
   "macros",
   "postgres",
   "migrate",
+  "mac_address",
 ] }
 strum = { version = "0.27.1", features = ["derive"] }
 thiserror = "2.0.11"
