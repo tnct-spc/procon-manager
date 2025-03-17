@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                        INSERT INTO laptops (item_id, mac_address)\n                        VALUES ($1, $2)\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Macaddr"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f00b01d9444b16ca6a7b651af87377240ec9f569b43334d77b67bc7333b1b185"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                        UPDATE laptops\n                        SET\n                            mac_address = $1\n                        WHERE item_id = $2\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Macaddr",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1eb926c1e3a5b724c35de42a42c03975c0d95122304ff200a3c17c380aba0f87"
+}

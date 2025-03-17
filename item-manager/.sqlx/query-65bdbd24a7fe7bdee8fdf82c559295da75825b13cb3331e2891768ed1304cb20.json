@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                DELETE FROM items\n                WHERE item_id = $1 AND category = 'general'\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "65bdbd24a7fe7bdee8fdf82c559295da75825b13cb3331e2891768ed1304cb20"
+}
