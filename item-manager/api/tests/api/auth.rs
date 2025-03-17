@@ -31,10 +31,7 @@ async fn login_success_200(
             let test_token = Arc::clone(&test_token);
 
             mock.expect_verify_user()
-                .returning(move |_email, _password| {
-                    eprintln!("{user_id:?}");
-                    Ok(user_id)
-                });
+                .returning(move |_email, _password| Ok(user_id));
 
             mock.expect_create_token()
                 .returning(move |_event| Ok(AccessToken((*test_token).clone())));
@@ -116,7 +113,7 @@ async fn verify_token_expired(
 
     let app = make_router(fixture_registry);
 
-    let req = Request::get(v1("/books")).bearer().body(Body::empty())?;
+    let req = Request::get(v1("/items")).bearer().body(Body::empty())?;
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::UNAUTHORIZED);
@@ -143,7 +140,7 @@ async fn verify_token_invalid(
 
     let app = make_router(fixture_registry);
 
-    let req = Request::get(v1("/books")).bearer().body(Body::empty())?;
+    let req = Request::get(v1("/items")).bearer().body(Body::empty())?;
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::UNAUTHORIZED);

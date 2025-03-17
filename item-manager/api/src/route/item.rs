@@ -5,17 +5,17 @@ use axum::{
 use registry::AppRegistry;
 
 use crate::handler::{
-    book::{delete_book, register_book, show_book, show_book_list, update_book},
     checkout::{checkout_book, checkout_history, return_book, show_checked_out_list},
+    item::{create_item, delete_item, get_item, list_items, update_item},
 };
 
 pub fn routes() -> Router<AppRegistry> {
-    let books_routers = Router::new()
-        .route("/", get(show_book_list))
-        .route("/", post(register_book))
-        .route("/{item_id}", get(show_book))
-        .route("/{item_id}", put(update_book))
-        .route("/{item_id}", delete(delete_book));
+    let items_router = Router::new()
+        .route("/", get(list_items))
+        .route("/", post(create_item))
+        .route("/{item_id}", get(get_item))
+        .route("/{item_id}", put(update_item))
+        .route("/{item_id}", delete(delete_item));
 
     let checkout_router = Router::new()
         .route("/checkouts", get(show_checked_out_list))
@@ -26,5 +26,5 @@ pub fn routes() -> Router<AppRegistry> {
         )
         .route("/{item_id}/checkout-history", get(checkout_history));
 
-    Router::new().nest("/books", books_routers.merge(checkout_router))
+    Router::new().nest("/items", items_router.merge(checkout_router))
 }

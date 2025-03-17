@@ -4,90 +4,87 @@ use axum::{
     http::StatusCode,
 };
 use garde::Validate;
-use kernel::model::{book::event::DeleteBook, id::ItemId};
+use kernel::model::{id::ItemId, item::DeleteItem};
 use registry::AppRegistry;
 use shared::error::{AppError, AppResult};
 
 use crate::{
     extractor::AuthorizedUser,
     model::{
-        book::{
-            BookResponse, CreateBookRequest, PaginatedBookResponse, UpdateBookRequest,
-            UpdateBookRequestWithIds,
-        },
+        item::{CreateItemRequest, ItemResponse, PaginatedItemResponse, UpdateItemRequest},
         list::ListQuery,
     },
 };
 
-pub async fn register_book(
+pub async fn create_item(
     _user: AuthorizedUser,
     State(registry): State<AppRegistry>,
-    Json(req): Json<CreateBookRequest>,
+    Json(req): Json<CreateItemRequest>,
 ) -> Result<StatusCode, AppError> {
     req.validate()?;
 
     registry
-        .book_repository()
+        .item_repository()
         .create(req.into())
         .await
         .map(|_| StatusCode::CREATED)
 }
 
-pub async fn show_book_list(
+pub async fn list_items(
     _user: AuthorizedUser,
     Query(query): Query<ListQuery>,
     State(registry): State<AppRegistry>,
-) -> AppResult<Json<PaginatedBookResponse>> {
+) -> AppResult<Json<PaginatedItemResponse>> {
     query.validate()?;
 
     registry
-        .book_repository()
+        .item_repository()
         .find_all(query.into())
         .await
-        .map(PaginatedBookResponse::from)
+        .and_then(PaginatedItemResponse::try_from)
         .map(Json)
 }
 
-pub async fn show_book(
+pub async fn get_item(
     _user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
-) -> AppResult<Json<BookResponse>> {
+) -> AppResult<Json<ItemResponse>> {
     registry
-        .book_repository()
+        .item_repository()
         .find_by_id(item_id)
         .await
-        .and_then(|bc| match bc {
-            Some(bc) => Ok(Json(bc.into())),
-            None => Err(AppError::EntityNotFound("not found".into())),
+        .and_then(|item| match item {
+            Some(item) => ItemResponse::try_from(item),
+            None => Err(AppError::EntityNotFound("Item not found".into())),
         })
+        .map(Json)
 }
 
-pub async fn update_book(
+pub async fn update_item(
     _user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
-    Json(req): Json<UpdateBookRequest>,
+    Json(req): Json<UpdateItemRequest>,
 ) -> AppResult<StatusCode> {
     req.validate()?;
 
-    let update_book = UpdateBookRequestWithIds::new(item_id, req);
     registry
-        .book_repository()
-        .update(update_book.into())
+        .item_repository()
+        .update(req.into_update_item(item_id))
         .await
         .map(|_| StatusCode::OK)
 }
 
-pub async fn delete_book(
+pub async fn delete_item(
     _user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
-    let delete_book = DeleteBook { item_id };
+    let delete_item = DeleteItem { item_id };
     registry
-        .book_repository()
-        .delete(delete_book)
+        .item_repository()
+        .delete(delete_item)
         .await
         .map(|_| StatusCode::OK)
 }

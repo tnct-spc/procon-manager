@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS items (
   item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   description VARCHAR(1024) NOT NULL,
-  category VARCHAR(255) NOT NULL CHECK (category IN ('book', 'laptop')),
+  category VARCHAR(255) NOT NULL CHECK (category IN ('general', 'book', 'laptop')),
   created_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 );
@@ -67,6 +67,20 @@ CREATE TABLE IF NOT EXISTS books (
 
 CREATE TRIGGER books_updated_at_trigger
   BEFORE UPDATE ON books FOR EACH ROW
+  EXECUTE PROCEDURE set_items_updated_at();
+
+
+CREATE TABLE IF NOT EXISTS laptops (
+  item_id UUID PRIMARY KEY NOT NULL,
+  mac_address macaddr NOT NULL,
+
+  FOREIGN KEY (item_id) REFERENCES items(item_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+CREATE TRIGGER laptops_updated_at_trigger
+  BEFORE UPDATE ON laptops FOR EACH ROW
   EXECUTE PROCEDURE set_items_updated_at();
 
 

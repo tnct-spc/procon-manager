@@ -1,8 +1,6 @@
-use super::{checkout::SimpleCheckout, id::ItemId};
+use crate::model::{checkout::SimpleCheckout, id::ItemId};
 
-pub mod event;
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Book {
     pub id: ItemId,
     pub name: String,

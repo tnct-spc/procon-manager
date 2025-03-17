@@ -9,7 +9,7 @@ pub struct User {
     pub role: Role,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CheckoutUser {
     pub id: UserId,
     pub name: String,

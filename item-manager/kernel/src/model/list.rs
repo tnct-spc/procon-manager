@@ -1,3 +1,5 @@
+use super::item::ItemCategory;
+
 #[derive(Debug)]
 pub struct PaginatedList<T> {
     pub total: i64,
@@ -16,4 +18,5 @@ impl<T> PaginatedList<T> {
 pub struct ListOptions {
     pub limit: i64,
     pub offset: i64,
+    pub category: Option<ItemCategory>,
 }
