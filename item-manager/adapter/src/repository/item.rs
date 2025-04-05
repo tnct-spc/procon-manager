@@ -203,19 +203,20 @@ impl ItemRepository for ItemRepositoryImpl {
     }
 
     async fn update(&self, event: UpdateItem) -> AppResult<()> {
+        let new_category = ItemCategory::from_str(event.as_ref()).unwrap();
         let (item_id, name, description) = match &event {
             UpdateItem::General {
                 item_id,
                 name,
                 description,
-            }
-            | UpdateItem::Book {
+            } => (item_id, name, description),
+            UpdateItem::Book {
                 item_id,
                 name,
                 description,
                 ..
-            }
-            | UpdateItem::Laptop {
+            } => (item_id, name, description),
+            UpdateItem::Laptop {
                 item_id,
                 name,
                 description,
@@ -226,54 +227,134 @@ impl ItemRepository for ItemRepositoryImpl {
         let mut tx = self.db.begin().await?;
         set_transaction_serializable(&mut tx).await?;
 
+        // Get current category
+        let current = sqlx::query!(
+            r#"
+                SELECT category
+                FROM items
+                WHERE item_id = $1
+            "#,
+            item_id.raw(),
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(AppError::SpecificOperationError)?
+        .ok_or_else(|| AppError::EntityNotFound("specified item not found".into()))?;
+
+        let current_category = ItemCategory::from_str(&current.category).unwrap();
+
+        // Clean up old category data if category changed
+        if current_category != new_category {
+            match current_category {
+                ItemCategory::Book => {
+                    sqlx::query!(
+                        r#"
+                            DELETE FROM books
+                            WHERE item_id = $1
+                        "#,
+                        item_id.raw(),
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                }
+                ItemCategory::Laptop => {
+                    sqlx::query!(
+                        r#"
+                            DELETE FROM laptops
+                            WHERE item_id = $1
+                        "#,
+                        item_id.raw(),
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                }
+                ItemCategory::General => {}
+            }
+        }
+
+        // Update base item data
         let res = sqlx::query!(
             r#"
                 UPDATE items
                 SET
                     name = $1,
-                    description = $2
-                WHERE item_id = $3
+                    description = $2,
+                    category = $3
+                WHERE item_id = $4
             "#,
             name,
             description,
+            new_category.as_ref(),
             item_id.raw(),
         )
         .execute(&mut *tx)
         .await
         .map_err(AppError::SpecificOperationError)?;
 
+        // Insert new category data if needed
         match &event {
             UpdateItem::Book { author, isbn, .. } => {
-                sqlx::query!(
-                    r#"
-                        UPDATE books
-                        SET
-                            author = $1,
-                            isbn = $2
-                        WHERE item_id = $3
-                    "#,
-                    author,
-                    isbn,
-                    item_id.raw(),
-                )
-                .execute(&mut *tx)
-                .await
-                .map_err(AppError::SpecificOperationError)?;
+                if current_category != ItemCategory::Book {
+                    sqlx::query!(
+                        r#"
+                            INSERT INTO books (item_id, author, isbn)
+                            VALUES ($1, $2, $3)
+                        "#,
+                        item_id.raw(),
+                        author,
+                        isbn,
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                } else {
+                    sqlx::query!(
+                        r#"
+                            UPDATE books
+                            SET
+                                author = $1,
+                                isbn = $2
+                            WHERE item_id = $3
+                        "#,
+                        author,
+                        isbn,
+                        item_id.raw(),
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                }
             }
             UpdateItem::Laptop { mac_address, .. } => {
-                sqlx::query!(
-                    r#"
-                        UPDATE laptops
-                        SET
-                            mac_address = $1
-                        WHERE item_id = $2
-                    "#,
-                    mac_address,
-                    item_id.raw(),
-                )
-                .execute(&mut *tx)
-                .await
-                .map_err(AppError::SpecificOperationError)?;
+                if current_category != ItemCategory::Laptop {
+                    sqlx::query!(
+                        r#"
+                            INSERT INTO laptops (item_id, mac_address)
+                            VALUES ($1, $2)
+                        "#,
+                        item_id.raw(),
+                        mac_address,
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                } else {
+                    sqlx::query!(
+                        r#"
+                            UPDATE laptops
+                            SET
+                                mac_address = $1
+                            WHERE item_id = $2
+                        "#,
+                        mac_address,
+                        item_id.raw(),
+                    )
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(AppError::SpecificOperationError)?;
+                }
             }
             _ => {}
         }
@@ -507,6 +588,87 @@ mod tests {
         };
         assert_eq!(updated_item.name, "Updated Name");
         assert_eq!(updated_item.description, "Updated Description");
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "item"))]
+    async fn test_update_item_category_changes(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = ItemRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
+
+        // Test General -> Book
+        {
+            let item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::General(_) = item else {
+                panic!("Expected item to be General");
+            };
+
+            let update_event = UpdateItem::Book {
+                item_id,
+                name: "Updated Book Name".into(),
+                description: "Updated Book Description".into(),
+                author: "Test Author".into(),
+                isbn: "1234567890123".into(),
+            };
+            repo.update(update_event).await?;
+
+            let updated_item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::Book(book) = updated_item else {
+                panic!("Expected item to be Book");
+            };
+            assert_eq!(book.name, "Updated Book Name");
+            assert_eq!(book.description, "Updated Book Description");
+            assert_eq!(book.author, "Test Author");
+            assert_eq!(book.isbn, "1234567890123");
+        }
+
+        // Test Book -> Laptop
+        {
+            let item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::Book(_) = item else {
+                panic!("Expected item to be Book");
+            };
+
+            let mac_address = MacAddress::from_str("00:00:00:00:00:00")?;
+            let update_event = UpdateItem::Laptop {
+                item_id,
+                name: "Updated Laptop Name".into(),
+                description: "Updated Laptop Description".into(),
+                mac_address,
+            };
+            repo.update(update_event).await?;
+
+            let updated_item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::Laptop(laptop) = updated_item else {
+                panic!("Expected item to be Laptop");
+            };
+            assert_eq!(laptop.name, "Updated Laptop Name");
+            assert_eq!(laptop.description, "Updated Laptop Description");
+            assert_eq!(laptop.mac_address, mac_address);
+        }
+
+        // Test Laptop -> General
+        {
+            let item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::Laptop(_) = item else {
+                panic!("Expected item to be Laptop");
+            };
+
+            let update_event = UpdateItem::General {
+                item_id,
+                name: "Final General Name".into(),
+                description: "Final General Description".into(),
+            };
+            repo.update(update_event).await?;
+
+            let updated_item = repo.find_by_id(item_id).await?.unwrap();
+            let Item::General(general) = updated_item else {
+                panic!("Expected item to be General");
+            };
+            assert_eq!(general.name, "Final General Name");
+            assert_eq!(general.description, "Final General Description");
+        }
 
         Ok(())
     }

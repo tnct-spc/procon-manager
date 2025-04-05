@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                            DELETE FROM laptops\n                            WHERE item_id = $1\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6859746f2d9e2d164fb6b1e7f9ef41e3c90931466c785a508bb0c76460f2a6c9"
+}

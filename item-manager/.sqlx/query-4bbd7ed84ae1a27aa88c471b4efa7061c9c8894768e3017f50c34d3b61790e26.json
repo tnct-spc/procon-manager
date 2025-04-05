@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                            INSERT INTO books (item_id, author, isbn)\n                            VALUES ($1, $2, $3)\n                        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4bbd7ed84ae1a27aa88c471b4efa7061c9c8894768e3017f50c34d3b61790e26"
+}

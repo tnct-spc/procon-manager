@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE items\n                SET\n                    name = $1,\n                    description = $2,\n                    category = $3\n                WHERE item_id = $4\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3d8cfcbb2e1adbdf2f5d392695b04e0fae4e16e8bb11d3f6fde6e72e215d16a2"
+}
