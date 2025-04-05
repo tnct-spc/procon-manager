@@ -291,7 +291,7 @@ impl ItemRepository for ItemRepositoryImpl {
         let res = sqlx::query!(
             r#"
                 DELETE FROM items
-                WHERE item_id = $1 AND category = 'general'
+                WHERE item_id = $1
             "#,
             event.item_id.raw(),
         )
