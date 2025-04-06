@@ -109,7 +109,7 @@
                 clippy-item-manager = {
                   enable = true;
                   name = "clippy-item-manager";
-                  entry = "${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
+                  entry = "env SQLX_OFFLINE=true ${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
                   files = "\\.(rs)$";
                   pass_filenames = false;
                 };
