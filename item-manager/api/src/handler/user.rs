@@ -3,8 +3,9 @@ use crate::{
     model::{
         checkout::CheckoutsResponse,
         user::{
-            CreateUserRequest, UpdateUserPasswordRequest, UpdateUserPasswordRequestWithUserId,
-            UpdateUserRoleRequest, UpdateUserRoleRequestWithUserId, UserResponse, UsersResponse,
+            CreateUserRequest, RoleName, UpdateUserPasswordRequest,
+            UpdateUserPasswordRequestWithUserId, UpdateUserRoleRequest,
+            UpdateUserRoleRequestWithUserId, UserResponse, UsersResponse,
         },
     },
 };
@@ -17,8 +18,52 @@ use garde::Validate;
 use kernel::model::{id::UserId, user::event::DeleteUser};
 use registry::AppRegistry;
 use shared::error::{AppError, AppResult};
+use utoipa::OpenApi;
 
-/// Add a user (Admin only)
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        register_user,
+        list_users,
+        delete_user,
+        change_role,
+        get_current_user,
+        change_password,
+        get_checkouts
+    ),
+    components(
+        schemas(
+            UserResponse,
+            UsersResponse,
+            CreateUserRequest,
+            UpdateUserPasswordRequest,
+            UpdateUserRoleRequest,
+            CheckoutsResponse,
+            RoleName
+        )
+    ),
+    tags(
+        (name = "users", description = "User management endpoints")
+    )
+)]
+pub struct ApiDoc;
+
+/// Register a new user (Admin only)
+///
+/// Create a new user account. Only administrators can perform this operation.
+#[utoipa::path(
+    post,
+    path = "/api/v1/users",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 200, description = "User created successfully", body = UserResponse),
+        (status = 400, description = "Invalid request body"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn register_user(
     user: AuthorizedUser,
     State(registry): State<AppRegistry>,
@@ -34,7 +79,19 @@ pub async fn register_user(
     Ok(Json(registered_user.into()))
 }
 
-/// Get a list of users
+/// Get a list of all users
+///
+/// Retrieve a list of all registered users
+#[utoipa::path(
+    get,
+    path = "/api/v1/users",
+    responses(
+        (status = 200, description = "Success", body = UsersResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn list_users(
     _user: AuthorizedUser,
     State(registry): State<AppRegistry>,
@@ -50,7 +107,24 @@ pub async fn list_users(
     Ok(Json(UsersResponse { items }))
 }
 
-/// Delete a user (Admin only)
+/// Delete a user account (Admin only)
+///
+/// Delete an existing user account. Only administrators can perform this operation.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/users/{user_id}",
+    params(
+        ("user_id" = String, Path, description = "User ID"),
+    ),
+    responses(
+        (status = 200, description = "User deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 404, description = "User not found"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn delete_user(
     user: AuthorizedUser,
     Path(user_id): Path<UserId>,
@@ -67,7 +141,26 @@ pub async fn delete_user(
 
     Ok(StatusCode::OK)
 }
-/// Change the role of a user (Admin only)
+/// Change user role (Admin only)
+///
+/// Update the role of an existing user. Only administrators can perform this operation.
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/{user_id}/role",
+    params(
+        ("user_id" = String, Path, description = "User ID"),
+    ),
+    request_body = UpdateUserRoleRequest,
+    responses(
+        (status = 200, description = "Role updated successfully"),
+        (status = 400, description = "Invalid request body"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 404, description = "User not found"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn change_role(
     user: AuthorizedUser,
     Path(user_id): Path<UserId>,
@@ -86,12 +179,39 @@ pub async fn change_role(
     Ok(StatusCode::OK)
 }
 
-/// Users retrieve their own user information
+/// Get current user information
+///
+/// Retrieve the authenticated user's profile information
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/me",
+    responses(
+        (status = 200, description = "Success", body = UserResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn get_current_user(user: AuthorizedUser) -> Json<UserResponse> {
     Json(UserResponse::from(user.user))
 }
 
-/// Users change their own password
+/// Change user password
+///
+/// Update the authenticated user's password
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/me/password",
+    request_body = UpdateUserPasswordRequest,
+    responses(
+        (status = 200, description = "Password updated successfully"),
+        (status = 400, description = "Invalid request body"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Invalid current password"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn change_password(
     user: AuthorizedUser,
     State(registry): State<AppRegistry>,
@@ -107,6 +227,19 @@ pub async fn change_password(
     Ok(StatusCode::OK)
 }
 
+/// Get user's active checkouts
+///
+/// Retrieve a list of items currently checked out by the authenticated user
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/me/checkouts",
+    responses(
+        (status = 200, description = "Success", body = CheckoutsResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
 pub async fn get_checkouts(
     user: AuthorizedUser,
     State(registry): State<AppRegistry>,

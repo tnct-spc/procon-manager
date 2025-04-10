@@ -1,8 +1,9 @@
 use garde::Validate;
 use kernel::model::{item::ItemCategory, list::ListOptions};
 use serde::Deserialize;
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct ListQuery {
     #[garde(range(min = 0))]
     #[serde(default = "default_limit")]

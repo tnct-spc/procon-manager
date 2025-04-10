@@ -7,12 +7,13 @@ use kernel::model::{
 };
 use mac_address::MacAddress;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use super::user::CheckoutUser;
 
 // Create Request types
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase", tag = "category")]
 pub enum CreateItemRequest {
     #[serde(rename = "general")]
@@ -38,6 +39,7 @@ pub enum CreateItemRequest {
         #[garde(length(min = 1))]
         name: String,
         #[garde(skip)]
+        #[schema(value_type = String, example = "00:00:00:00:00:00")]
         mac_address: MacAddress,
         #[garde(skip)]
         description: String,
@@ -76,7 +78,7 @@ impl From<CreateItemRequest> for CreateItem {
 
 // Update Request types
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase", tag = "category")]
 pub enum UpdateItemRequest {
     #[serde(rename = "general")]
@@ -102,6 +104,7 @@ pub enum UpdateItemRequest {
         #[garde(length(min = 1))]
         name: String,
         #[garde(skip)]
+        #[schema(value_type = String, example = "00:00:00:00:00:00")]
         mac_address: MacAddress,
         #[garde(skip)]
         description: String,
@@ -144,7 +147,7 @@ impl UpdateItemRequest {
 
 // Response types
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneralItemResponse {
     pub id: ItemId,
@@ -153,7 +156,7 @@ pub struct GeneralItemResponse {
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct BookResponse {
     pub id: ItemId,
@@ -164,17 +167,18 @@ pub struct BookResponse {
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LaptopResponse {
     pub id: ItemId,
     pub name: String,
+    #[schema(value_type = String, example = "00:00:00:00:00:00")]
     pub mac_address: MacAddress,
     pub description: String,
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "category")]
 pub enum ItemResponse {
     #[serde(rename = "general")]
@@ -215,7 +219,7 @@ impl TryFrom<Item> for ItemResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PaginatedItemResponse {
     pub total: i64,
@@ -247,11 +251,12 @@ impl TryFrom<PaginatedList<Item>> for PaginatedItemResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemCheckoutResponse {
     pub id: CheckoutId,
     pub checked_out_by: CheckoutUser,
+    #[schema(value_type = String, format = "date-time", example = "2024-04-10T13:15:00Z")]
     pub checked_out_at: chrono::DateTime<chrono::Utc>,
 }
 

@@ -1,7 +1,13 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use api::route::{auth, v1};
+use api::{
+    handler::{
+        auth::ApiDoc as AuthApiDoc, checkout::ApiDoc as CheckoutApiDoc,
+        health::ApiDoc as HealthApiDoc, item::ApiDoc as ItemApiDoc, user::ApiDoc as UserApiDoc,
+    },
+    route::{auth, v1},
+};
 use axum::http::Method;
 use tower_http::{
     LatencyUnit,
@@ -9,6 +15,8 @@ use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -52,9 +60,17 @@ async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
     let pool = adapter::database::connect_database_with(&app_config.database);
     let registry = Arc::new(registry::AppRegistryImpl::new(pool, app_config));
+
+    let mut api_doc = HealthApiDoc::openapi();
+    api_doc.merge(AuthApiDoc::openapi());
+    api_doc.merge(CheckoutApiDoc::openapi());
+    api_doc.merge(ItemApiDoc::openapi());
+    api_doc.merge(UserApiDoc::openapi());
+
     let app = axum::Router::new()
         .merge(v1::routes())
         .merge(auth::routes())
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api_doc))
         .layer(cors())
         .layer(
             TraceLayer::new_for_http()
