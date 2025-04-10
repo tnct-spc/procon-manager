@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::Context;
+use adapter::database::ConnectionPool;
 use api::{
     handler::{
         auth::ApiDoc as AuthApiDoc, checkout::ApiDoc as CheckoutApiDoc,
@@ -14,51 +14,20 @@ use tower_http::{
     cors::{self, CorsLayer},
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    if dotenvy::from_filename(".env-item").is_err() {
-        println!("Failed to read .env-item file");
-    }
-
-    init_logger()?;
-    bootstrap().await
-}
-
-fn init_logger() -> anyhow::Result<()> {
-    let log_level = match shared::env::which() {
-        shared::env::Environment::Production => "info",
-        shared::env::Environment::Development => "debug",
-    };
-
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| log_level.into());
-
-    let subscriber = tracing_subscriber::fmt::layer()
-        .with_file(true)
-        .with_line_number(true)
-        .with_target(true);
-
-    tracing_subscriber::registry()
-        .with(subscriber)
-        .with(env_filter)
-        .try_init()?;
-
-    Ok(())
-}
-
-fn cors() -> CorsLayer {
-    CorsLayer::new()
-        .allow_headers(cors::Any)
-        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_origin(cors::Any)
-}
-
-async fn bootstrap() -> anyhow::Result<()> {
-    let app_config = shared::config::AppConfig::new()?;
-    let pool = adapter::database::connect_database_with(&app_config.database);
+#[shuttle_runtime::main]
+async fn main(
+    #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
+    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
+) -> shuttle_axum::ShuttleAxum {
+    let app_config = shared::config::AppConfig::new(secrets)?;
+    let pool = ConnectionPool::new(pool);
+    sqlx::migrate!("./adapter/migrations")
+        .run(pool.inner_ref())
+        .await
+        .expect("Failed to run migrations");
     let registry = Arc::new(registry::AppRegistryImpl::new(pool, app_config));
 
     let mut api_doc = HealthApiDoc::openapi();
@@ -84,19 +53,12 @@ async fn bootstrap() -> anyhow::Result<()> {
         )
         .with_state(registry);
 
-    let addr = std::net::SocketAddr::new(std::net::Ipv4Addr::LOCALHOST.into(), 8081);
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    Ok(app.into())
+}
 
-    tracing::info!("Listening on {addr}");
-
-    axum::serve(listener, app)
-        .await
-        .context("Failed to start server")
-        .inspect_err(|e| {
-            tracing::error!(
-                error.cause_chain = ?e,
-                error.message = %e,
-                "Unexpected error"
-            );
-        })
+fn cors() -> CorsLayer {
+    CorsLayer::new()
+        .allow_headers(cors::Any)
+        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin(cors::Any)
 }

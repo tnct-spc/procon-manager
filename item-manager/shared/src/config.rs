@@ -1,33 +1,15 @@
-use anyhow::Context;
-
 pub struct AppConfig {
-    pub database: DatabaseConfig,
     pub auth: AuthConfig,
 }
 
 impl AppConfig {
-    pub fn new() -> anyhow::Result<Self> {
-        let database = DatabaseConfig {
-            host: std::env::var("DATABASE_HOST").context("DATABASE_HOST")?,
-            username: std::env::var("DATABASE_USERNAME").context("DATABASE_USERNAME")?,
-            password: std::env::var("DATABASE_PASSWORD").context("DATABASE_PASSWORD")?,
-            database: std::env::var("DATABASE_NAME").context("DATABASE_NAME")?,
-        };
+    pub fn new(secrets: shuttle_runtime::SecretStore) -> anyhow::Result<Self> {
         let auth = AuthConfig {
-            ttl: std::env::var("AUTH_TOKEN_TTL")
-                .context("AUTH_TOKEN_TTL")?
-                .parse()?,
-            secret: std::env::var("JWT_SECRET").context("JWT_SECRET")?,
+            ttl: secrets.get("AUTH_TOKEN_TTL").unwrap().parse()?,
+            secret: secrets.get("JWT_SECRET").unwrap(),
         };
-        Ok(Self { database, auth })
+        Ok(Self { auth })
     }
-}
-
-pub struct DatabaseConfig {
-    pub host: String,
-    pub username: String,
-    pub password: String,
-    pub database: String,
 }
 
 pub struct AuthConfig {

@@ -4,7 +4,7 @@ name = "item-manager"
 version = "0.1.0"
 
 [[bin]]
-name = "app"
+name = "item-manager"
 path = "src/bin/app.rs"
 
 [workspace]
@@ -27,6 +27,7 @@ mockall = "0.13.1"
 registry = { path = "./registry" }
 serde = { version = "1.0.217", features = ["derive"] }
 shared = { path = "./shared" }
+shuttle-runtime = "0.53.0"
 sqlx = { version = "0.8.3", features = [
   "runtime-tokio",
   "uuid",
@@ -43,6 +44,7 @@ tokio-stream = "0.1.17"
 tower = "0.5.2"
 tracing = { version = "0.1.41", features = ["log"] }
 utoipa = { version = "5.3.1", features = ["axum_extras"] }
+utoipa-axum = "0.2.0"
 utoipa-swagger-ui = { version = "9.0.1", features = ["axum"] }
 uuid = { version = "1.13.1", features = ["serde", "v4"] }
 
@@ -54,6 +56,10 @@ axum.workspace = true
 dotenvy = "0.15.7"
 registry.workspace = true
 shared.workspace = true
+shuttle-axum = "0.53.0"
+shuttle-runtime.workspace = true
+shuttle-shared-db = { version = "0.53.0", features = ["postgres", "sqlx"] }
+sqlx.workspace = true
 tokio.workspace = true
 tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 tracing.workspace = true
