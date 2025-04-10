@@ -42,6 +42,8 @@ tokio = { version = "1.43.0", features = ["full"] }
 tokio-stream = "0.1.17"
 tower = "0.5.2"
 tracing = { version = "0.1.41", features = ["log"] }
+utoipa = { version = "5.3.1", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9.0.1", features = ["axum"] }
 uuid = { version = "1.13.1", features = ["serde", "v4"] }
 
 [dependencies]
@@ -56,3 +58,5 @@ tokio.workspace = true
 tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true

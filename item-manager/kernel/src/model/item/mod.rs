@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use strum::{AsRefStr, EnumString};
+use utoipa::ToSchema;
 
 use super::id::ItemId;
 
@@ -7,7 +8,7 @@ pub mod book;
 pub mod general;
 pub mod laptop;
 
-#[derive(Debug, Clone, Copy, EnumString, AsRefStr, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, EnumString, AsRefStr, PartialEq, Serialize, Deserialize, ToSchema)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ItemCategory {
