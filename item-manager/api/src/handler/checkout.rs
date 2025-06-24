@@ -35,7 +35,7 @@ pub struct ApiDoc;
 /// Create a new checkout record for an item
 #[utoipa::path(
     post,
-    path = "/api/v1/items/{item_id}/checkout",
+    path = "/api/v1/items/{item_id}/checkouts",
     params(
         ("item_id" = String, Path, description = "Item ID to checkout"),
     ),
@@ -66,8 +66,8 @@ pub async fn checkout_book(
 ///
 /// Mark a checked out item as returned
 #[utoipa::path(
-    post,
-    path = "/api/v1/items/{item_id}/checkouts/{checkout_id}/return",
+    put,
+    path = "/api/v1/items/{item_id}/checkouts/{checkout_id}/returned",
     params(
         ("item_id" = String, Path, description = "Item ID to return"),
         ("checkout_id" = String, Path, description = "Checkout record ID"),
@@ -124,7 +124,7 @@ pub async fn show_checked_out_list(
 /// Get the complete checkout history for a specific item
 #[utoipa::path(
     get,
-    path = "/api/v1/items/{item_id}/checkouts",
+    path = "/api/v1/items/{item_id}/checkout-history",
     params(
         ("item_id" = String, Path, description = "Item ID"),
     ),
