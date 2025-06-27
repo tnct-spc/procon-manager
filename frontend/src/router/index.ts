@@ -1,23 +1,58 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import LoginForm from '../components/login/LoginForm.vue'
+import ItemDashboard from '../components/dashboard/ItemDashboard.vue'
+import AdminView from '../views/AdminView.vue'
+import MyPageView from '../views/MyPageView.vue'
+import { useAppStore } from '../stores/counter'
+
+const routes = [
+  { path: '/', redirect: '/login' },
+  { path: '/login', name: 'Login', component: LoginForm },
+  { 
+    path: '/dashboard', 
+    name: 'Dashboard', 
+    component: ItemDashboard,
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/admin', 
+    name: 'Admin', 
+    component: AdminView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/mypage', 
+    name: 'MyPage', 
+    component: MyPageView,
+    meta: { requiresAuth: true }
+  }
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
+  history: createWebHistory(),
+  routes
+})
+
+// ナビゲーションガード追加
+router.beforeEach(async (to) => {
+  const store = useAppStore()
+  if (store.currentUser === null) {
+    await store.getCurrentUser()
+  }
+  const requiresAuth = to.matched.some(r => r.meta.requiresAuth)
+  const requiresAdmin = to.matched.some(r => r.meta.requiresAdmin)
+  
+  if (requiresAuth && !store.currentUser) {
+    return { name: 'Login' }
+  }
+  
+  if (requiresAdmin && store.currentUser?.role !== 'Admin') {
+    return { name: 'Dashboard' }
+  }
+  
+  if (to.name === 'Login' && store.currentUser) {
+    return { name: 'Dashboard' }
+  }
 })
 
 export default router
