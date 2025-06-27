@@ -50,6 +50,20 @@
               socketDir = "data/pg1";
             };
           };
+          toolchain = pkgs.rust-bin.stable.latest.default;
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = toolchain;
+            rustc = toolchain;
+          };
+
+          hooks = {
+            ripsecrets.enable = true;
+            typos.enable = true;
+            treefmt = {
+              enable = true;
+              package = config.treefmt.build.wrapper;
+            };
+          };
         in
         {
           _module.args.pkgs = import inputs.nixpkgs {
@@ -57,7 +71,7 @@
             overlays = [ inputs.rust-overlay.overlays.default ];
           };
 
-          packages.item-manager = pkgs.callPackage ./item-manager/package.nix { };
+          packages.item-manager = pkgs.callPackage ./item-manager/package.nix { inherit rustPlatform; };
 
           packages.default = config.packages.item-manager;
 
@@ -99,19 +113,38 @@
             };
           };
 
-          pre-commit = {
-            check.enable = true;
-            settings = {
+          checks = {
+            pre-commit = inputs.git-hooks-nix.lib.${system}.run {
+              src = ./.;
+              inherit hooks;
+            };
+
+            clippy-item-manager = inputs.git-hooks-nix.lib.${system}.run {
+              src = ./item-manager;
+              settings.rust.check.cargoDeps = config.packages.item-manager.cargoDeps;
               hooks = {
-                ripsecrets.enable = true;
-                typos.enable = true;
-                treefmt.enable = true;
+                clippy-item-manager = {
+                  enable = true;
+                  name = "clippy-item-manager";
+                  entry = "env SQLX_OFFLINE=true ${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets -- -Dwarnings";
+                  pass_filenames = false;
+                  extraPackages = [ toolchain ];
+                };
+              };
+            };
+          };
+
+          pre-commit = {
+            check.enable = false;
+            settings = {
+              hooks = hooks // {
                 clippy-item-manager = {
                   enable = true;
                   name = "clippy-item-manager";
                   entry = "env SQLX_OFFLINE=true ${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
                   files = "\\.(rs)$";
                   pass_filenames = false;
+                  extraPackages = [ toolchain ];
                 };
               };
             };

@@ -1,15 +1,8 @@
 {
   lib,
   makeRustPlatform,
-  rust-bin,
+  rustPlatform,
 }:
-let
-  toolchain = rust-bin.stable.latest.default;
-  rustPlatform = makeRustPlatform {
-    cargo = toolchain;
-    rustc = toolchain;
-  };
-in
 rustPlatform.buildRustPackage {
   pname = "item-manager";
   version = "0.1.0";

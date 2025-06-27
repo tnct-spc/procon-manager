@@ -3,10 +3,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
   pull_request:
     paths-ignore:
       - "README.md"
-      - "frontend/**"
 
 jobs:
   check:
@@ -31,24 +32,11 @@ jobs:
         with:
           package: .#devShells.x86_64-linux.default
 
-      - name: enable direnv
-        run: echo "use flake" > .envrc
-
-      - uses: aldoborrero/direnv-nix-action@v2
-        with:
-          use_nix_profile: true
-          nix_channel: nixpkgs
-
       - name: Test
-        run: cargo make --cwd item-manager test-ci
+        run: nix develop -c cargo make --cwd item-manager test-ci
 
-      - name: Clippy
-        working-directory: item-manager
-        run: cargo clippy --all --all-targets -- -Dwarnings
-
-      - name: Rustfmt
-        working-directory: item-manager
-        run: cargo fmt --all --check
+      - name: Check format and lint
+        run: nix flake check
 
       - name: Check unused dependencies
         working-directory: item-manager

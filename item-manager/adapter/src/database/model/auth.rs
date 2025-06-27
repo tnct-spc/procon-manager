@@ -43,7 +43,7 @@ impl JwtSecret {
             &claims,
             &EncodingKey::from_secret(self.0.as_bytes()),
         )
-        .map_err(|e| AppError::ConversionEntityError(format!("Failed to create token: {}", e)))?;
+        .map_err(|e| AppError::ConversionEntityError(format!("Failed to create token: {e}")))?;
 
         Ok(AccessToken(token))
     }

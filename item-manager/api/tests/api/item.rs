@@ -171,7 +171,7 @@ async fn get_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Resu
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1(&format!("/items/{}", item_id)))
+    let req = Request::get(v1(&format!("/items/{item_id}")))
         .bearer()
         .body(Body::empty())?;
 
@@ -232,7 +232,7 @@ async fn update_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
         description: "Updated Description".into(),
     };
 
-    let req = Request::put(v1(&format!("/items/{}", item_id)))
+    let req = Request::put(v1(&format!("/items/{item_id}")))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -265,7 +265,7 @@ async fn update_item_400(
         description: description.into(),
     };
 
-    let req = Request::put(v1(&format!("/items/{}", item_id)))
+    let req = Request::put(v1(&format!("/items/{item_id}")))
         .bearer()
         .application_json()
         .body(Body::from(serde_json::to_string(&req)?))?;
@@ -288,7 +288,7 @@ async fn delete_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
 
     let app = make_router(fixture);
 
-    let req = Request::delete(v1(&format!("/items/{}", item_id)))
+    let req = Request::delete(v1(&format!("/items/{item_id}")))
         .bearer()
         .body(Body::empty())?;
 
@@ -355,7 +355,7 @@ async fn checkout_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow:
 
     let app = make_router(fixture);
 
-    let req = Request::post(v1(&format!("/items/{}/checkouts", item_id)))
+    let req = Request::post(v1(&format!("/items/{item_id}/checkouts")))
         .bearer()
         .body(Body::empty())?;
 
@@ -379,8 +379,7 @@ async fn return_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
     let app = make_router(fixture);
 
     let req = Request::put(v1(&format!(
-        "/items/{}/checkouts/{}/returned",
-        item_id, checkout_id
+        "/items/{item_id}/checkouts/{checkout_id}/returned"
     )))
     .bearer()
     .body(Body::empty())?;
@@ -415,7 +414,7 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
 
     let app = make_router(fixture);
 
-    let req = Request::get(v1(&format!("/items/{}/checkout-history", item_id)))
+    let req = Request::get(v1(&format!("/items/{item_id}/checkout-history")))
         .bearer()
         .body(Body::empty())?;
 

@@ -10,7 +10,7 @@ use registry::MockAppRegistryExt;
 use rstest::fixture;
 
 pub fn v1(endpoint: &str) -> String {
-    format!("/api/v1{}", endpoint)
+    format!("/api/v1{endpoint}")
 }
 
 pub fn make_router(registry: MockAppRegistryExt) -> Router {
