@@ -1,76 +1,78 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useAppStore } from '../../stores/counter'
-import type { CreateItemRequest } from '../../types/api'
+import { computed, ref } from "vue";
+import { useAppStore } from "../../stores/counter";
+import type { CreateItemRequest } from "../../types/api";
 
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
-const store = useAppStore()
+const store = useAppStore();
 
 const formData = ref({
-  category: 'general' as 'general' | 'book' | 'laptop',
-  name: '',
-  description: '',
-  author: '',
-  isbn: '',
-  mac_address: ''
-})
+  category: "general" as "general" | "book" | "laptop",
+  name: "",
+  description: "",
+  author: "",
+  isbn: "",
+  mac_address: "",
+});
 
 const isFormValid = computed(() => {
-  const { category, name, description, author, isbn, mac_address } = formData.value
-  
-  if (!name || !description) return false
-  
-  if (category === 'book' && (!author || !isbn)) return false
-  if (category === 'laptop' && !mac_address) return false
-  
-  return true
-})
+  const { category, name, description, author, isbn, mac_address } =
+    formData.value;
+
+  if (!name || !description) return false;
+
+  if (category === "book" && (!author || !isbn)) return false;
+  if (category === "laptop" && !mac_address) return false;
+
+  return true;
+});
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
 
-  const { category, name, description, author, isbn, mac_address } = formData.value
+  const { category, name, description, author, isbn, mac_address } =
+    formData.value;
 
-  let itemData: CreateItemRequest
+  let itemData: CreateItemRequest;
 
   switch (category) {
-    case 'book':
-      itemData = { category, name, description, author, isbn }
-      break
-    case 'laptop':
-      itemData = { category, name, description, mac_address }
-      break
+    case "book":
+      itemData = { category, name, description, author, isbn };
+      break;
+    case "laptop":
+      itemData = { category, name, description, mac_address };
+      break;
     default:
-      itemData = { category: 'general', name, description }
+      itemData = { category: "general", name, description };
   }
 
   try {
-    await store.createItem(itemData)
-    emit('close')
-    resetForm()
+    await store.createItem(itemData);
+    emit("close");
+    resetForm();
   } catch (error) {
-    console.error('アイテム作成エラー:', error)
+    console.error("アイテム作成エラー:", error);
   }
-}
+};
 
 const resetForm = () => {
   formData.value = {
-    category: 'general',
-    name: '',
-    description: '',
-    author: '',
-    isbn: '',
-    mac_address: ''
-  }
-}
+    category: "general",
+    name: "",
+    description: "",
+    author: "",
+    isbn: "",
+    mac_address: "",
+  };
+};
 
 const handleCancel = () => {
-  resetForm()
-  emit('close')
-}
+  resetForm();
+  emit("close");
+};
 </script>
 
 <template>

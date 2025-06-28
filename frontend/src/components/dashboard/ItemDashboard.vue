@@ -1,97 +1,108 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useAppStore } from '../../stores/counter'
-import type { Item } from '../../types/api'
-import CreateItemForm from './CreateItemForm.vue'
-import EditItemForm from './EditItemForm.vue'
-import AddButton from '../ui/AddButton.vue'
+import { onMounted, ref } from "vue";
+import { useAppStore } from "../../stores/counter";
+import type { Item } from "../../types/api";
+import AddButton from "../ui/AddButton.vue";
+import CreateItemForm from "./CreateItemForm.vue";
+import EditItemForm from "./EditItemForm.vue";
 
-const store = useAppStore()
-const showCreateForm = ref(false)
+const store = useAppStore();
+const showCreateForm = ref(false);
 
 onMounted(async () => {
-  await store.fetchItems()
-  await store.getCurrentUser()
-})
+  await store.fetchItems();
+  await store.getCurrentUser();
+});
 
 const handleCheckout = async (item: Item) => {
   try {
-    await store.checkoutItem(item.id)
+    await store.checkoutItem(item.id);
   } catch (error: any) {
-    console.error('チェックアウトエラー:', error)
+    console.error("チェックアウトエラー:", error);
     if (error.response?.status === 404) {
-      alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
+      alert(
+        "サーバーに接続できません。バックエンドAPIが起動していることを確認してください。",
+      );
     } else if (error.response?.status === 409) {
-      alert('このアイテムは既にチェックアウトされています。')
+      alert("このアイテムは既にチェックアウトされています。");
     } else {
-      alert(`チェックアウトに失敗しました: ${error.message || 'サーバーエラー'}`)
+      alert(
+        `チェックアウトに失敗しました: ${error.message || "サーバーエラー"}`,
+      );
     }
   }
-}
+};
 
 const handleReturn = async (item: Item) => {
   if (item.checkout) {
     try {
-      await store.returnItem(item.id, item.checkout.id)
+      await store.returnItem(item.id, item.checkout.id);
     } catch (error: any) {
-      console.error('返却エラー:', error)
+      console.error("返却エラー:", error);
       if (error.response?.status === 404) {
-        alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
+        alert(
+          "サーバーに接続できません。バックエンドAPIが起動していることを確認してください。",
+        );
       } else {
-        alert(`返却に失敗しました: ${error.message || 'サーバーエラー'}`)
+        alert(`返却に失敗しました: ${error.message || "サーバーエラー"}`);
       }
     }
   }
-}
+};
 
 const getItemTypeLabel = (item: Item) => {
   switch (item.category) {
-    case 'general': return '一般'
-    case 'book': return '書籍'
-    case 'laptop': return 'ノートPC'
-    default: return '不明'
+    case "general":
+      return "一般";
+    case "book":
+      return "書籍";
+    case "laptop":
+      return "ノートPC";
+    default:
+      return "不明";
   }
-}
+};
 
 const getItemDetails = (item: Item) => {
   switch (item.category) {
-    case 'book':
-      return `著者: ${item.author}, ISBN: ${item.isbn}`
-    case 'laptop':
-      return `MAC: ${item.macAddress}`
+    case "book":
+      return `著者: ${item.author}, ISBN: ${item.isbn}`;
+    case "laptop":
+      return `MAC: ${item.macAddress}`;
     default:
-      return ''
+      return "";
   }
-}
+};
 
-const showEditForm = ref(false)
-const editingItem = ref<Item | null>(null)
-const showMenu = ref<{[key: string]: boolean}>({})
+const showEditForm = ref(false);
+const editingItem = ref<Item | null>(null);
+const showMenu = ref<{ [key: string]: boolean }>({});
 
 const toggleMenu = (itemId: string) => {
   showMenu.value = {
     ...showMenu.value,
-    [itemId]: !showMenu.value[itemId]
-  }
-}
+    [itemId]: !showMenu.value[itemId],
+  };
+};
 
 const editItem = (item: Item) => {
-  editingItem.value = item
-  showEditForm.value = true
-  showMenu.value = {}
-}
+  editingItem.value = item;
+  showEditForm.value = true;
+  showMenu.value = {};
+};
 
 const deleteItem = async (itemId: string) => {
-  if (!confirm('このアイテムを削除しますか？この操作は取り消せません。')) return
-  
+  if (!confirm("このアイテムを削除しますか？この操作は取り消せません。"))
+    return;
+
   try {
-    await store.deleteItem(itemId)
+    await store.deleteItem(itemId);
   } catch (error: any) {
-    console.error('削除エラー:', error)
-    alert(`削除に失敗しました: ${error.message || 'サーバーエラー'}`)
+    console.error("削除エラー:", error);
+    alert(`削除に失敗しました: ${error.message || "サーバーエラー"}`);
   }
-  showMenu.value = {}
-}
+  showMenu.value = {};
+};
 </script>
 
 <template>

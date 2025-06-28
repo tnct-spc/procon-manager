@@ -1,125 +1,131 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useAppStore } from '../../stores/counter'
-import type { Item } from '../../types/api'
-import { getErrorMessage } from '../../types/error'
-import axios from 'axios'
+import axios from "axios";
+import { computed, onMounted, ref } from "vue";
+import { useAppStore } from "../../stores/counter";
+import type { Item } from "../../types/api";
+import { getErrorMessage } from "../../types/error";
 
-const store = useAppStore()
-const borrowedItems = ref<Item[]>([])
-const loading = ref(false)
-const returnLoading = ref(false)
-const error = ref('')
+const store = useAppStore();
+const borrowedItems = ref<Item[]>([]);
+const loading = ref(false);
+const returnLoading = ref(false);
+const error = ref("");
 
 const fetchBorrowedItems = async () => {
-  loading.value = true
-  error.value = ''
-  
+  loading.value = true;
+  error.value = "";
+
   try {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem("accessToken");
     const response = await axios.get(
-      'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/checkouts',
+      "https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/checkouts",
       {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
-    )
-    
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
     // APIから返されるCheckoutのデータから、itemIdを使って詳細なアイテム情報を取得
-    const checkouts = response.data.items
-    
+    const checkouts = response.data.items;
+
     // 各チェックアウトのアイテム詳細を取得
     const itemPromises = checkouts.map(async (checkout: any) => {
       const itemResponse = await axios.get(
         `https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/items/${checkout.itemId}`,
         {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      )
-      
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
       // アイテムにチェックアウト情報を追加
       return {
         ...itemResponse.data,
         checkout: {
           id: checkout.id,
-          checkedOutBy: { id: store.currentUser?.id, name: store.currentUser?.name },
-          checkedOutAt: checkout.checkedOutAt
-        }
-      }
-    })
-    
-    borrowedItems.value = await Promise.all(itemPromises)
-    
+          checkedOutBy: {
+            id: store.currentUser?.id,
+            name: store.currentUser?.name,
+          },
+          checkedOutAt: checkout.checkedOutAt,
+        },
+      };
+    });
+
+    borrowedItems.value = await Promise.all(itemPromises);
   } catch (err: unknown) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const getItemTypeLabel = (category: string) => {
   switch (category) {
-    case 'general': return '一般'
-    case 'book': return '書籍'
-    case 'laptop': return 'ノートPC'
-    default: return '不明'
+    case "general":
+      return "一般";
+    case "book":
+      return "書籍";
+    case "laptop":
+      return "ノートPC";
+    default:
+      return "不明";
   }
-}
+};
 
 const getItemDetails = (item: Item) => {
   switch (item.category) {
-    case 'book':
-      return `著者: ${item.author}, ISBN: ${item.isbn}`
-    case 'laptop':
-      return `MAC: ${item.macAddress}`
+    case "book":
+      return `著者: ${item.author}, ISBN: ${item.isbn}`;
+    case "laptop":
+      return `MAC: ${item.macAddress}`;
     default:
-      return ''
+      return "";
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+  return new Date(dateString).toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
 const getDaysPassed = (dateString: string) => {
-  const checkoutDate = new Date(dateString)
-  const today = new Date()
-  const diffTime = Math.abs(today.getTime() - checkoutDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays
-}
+  const checkoutDate = new Date(dateString);
+  const today = new Date();
+  const diffTime = Math.abs(today.getTime() - checkoutDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
 const handleReturn = async (item: Item) => {
-  if (!item.checkout) return
-  
-  if (!confirm(`「${item.name}」を返却しますか？`)) return
-  
-  returnLoading.value = true
-  
+  if (!item.checkout) return;
+
+  if (!confirm(`「${item.name}」を返却しますか？`)) return;
+
+  returnLoading.value = true;
+
   try {
-    await store.returnItem(item.id, item.checkout.id)
+    await store.returnItem(item.id, item.checkout.id);
     // 返却後にリストを更新
-    await fetchBorrowedItems()
-    alert('返却が完了しました。')
+    await fetchBorrowedItems();
+    alert("返却が完了しました。");
   } catch (err: unknown) {
-    error.value = getErrorMessage(err)
-    alert(`返却に失敗しました: ${getErrorMessage(err)}`)
+    error.value = getErrorMessage(err);
+    alert(`返却に失敗しました: ${getErrorMessage(err)}`);
   } finally {
-    returnLoading.value = false
+    returnLoading.value = false;
   }
-}
+};
 
 onMounted(async () => {
-  await store.getCurrentUser()
-  await fetchBorrowedItems()
-})
+  await store.getCurrentUser();
+  await fetchBorrowedItems();
+});
 </script>
 
 <template>

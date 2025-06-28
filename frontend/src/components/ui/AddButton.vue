@@ -1,13 +1,13 @@
 <script setup lang="ts">
 interface Props {
-  disabled?: boolean
-  label?: string
+  disabled?: boolean;
+  label?: string;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 defineEmits<{
-  click: []
-}>()
+  click: [];
+}>();
 </script>
 
 <template>

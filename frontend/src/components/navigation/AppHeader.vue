@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { useAppStore } from '../../stores/counter'
+import { useRouter } from "vue-router";
+import { useAppStore } from "../../stores/counter";
 
-const router = useRouter()
-const store = useAppStore()
-const isLoggedIn = !!localStorage.getItem('accessToken')
+const router = useRouter();
+const store = useAppStore();
+const isLoggedIn = !!localStorage.getItem("accessToken");
 
 const handleLogout = () => {
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('userId')
-  store.currentUser = null
-  router.push('/login')
-}
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("userId");
+  store.currentUser = null;
+  router.push("/login");
+};
 </script>
 
 <template>

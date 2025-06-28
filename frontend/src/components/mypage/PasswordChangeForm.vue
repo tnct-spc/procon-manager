@@ -1,79 +1,82 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import axios from 'axios'
-import { getErrorMessage } from '../../types/error'
+import axios from "axios";
+import { computed, ref } from "vue";
+import { getErrorMessage } from "../../types/error";
 
 const emit = defineEmits<{
-  success: []
-}>()
+  success: [];
+}>();
 
 const formData = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
 
-const showCurrentPassword = ref(false)
-const showNewPassword = ref(false)
-const showConfirmPassword = ref(false)
-const loading = ref(false)
-const error = ref('')
-const success = ref(false)
+const showCurrentPassword = ref(false);
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
+const loading = ref(false);
+const error = ref("");
+const success = ref(false);
 
 const passwordMismatch = computed(() => {
-  return formData.value.confirmPassword !== '' && 
-         formData.value.newPassword !== formData.value.confirmPassword
-})
+  return (
+    formData.value.confirmPassword !== "" &&
+    formData.value.newPassword !== formData.value.confirmPassword
+  );
+});
 
 const isFormValid = computed(() => {
-  return formData.value.currentPassword !== '' &&
-         formData.value.newPassword !== '' &&
-         formData.value.confirmPassword !== '' &&
-         formData.value.newPassword === formData.value.confirmPassword &&
-         formData.value.newPassword.length >= 6
-})
+  return (
+    formData.value.currentPassword !== "" &&
+    formData.value.newPassword !== "" &&
+    formData.value.confirmPassword !== "" &&
+    formData.value.newPassword === formData.value.confirmPassword &&
+    formData.value.newPassword.length >= 6
+  );
+});
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
 
-  loading.value = true
-  error.value = ''
-  success.value = false
+  loading.value = true;
+  error.value = "";
+  success.value = false;
 
   try {
-    const token = localStorage.getItem('accessToken')
+    const token = localStorage.getItem("accessToken");
     await axios.put(
-      'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/password',
+      "https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/password",
       {
         currentPassword: formData.value.currentPassword,
-        newPassword: formData.value.newPassword
+        newPassword: formData.value.newPassword,
       },
       {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
-    )
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
 
-    success.value = true
+    success.value = true;
     formData.value = {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    }
-    
-    emit('success')
-    
-    setTimeout(() => {
-      success.value = false
-    }, 5000)
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    };
 
+    emit("success");
+
+    setTimeout(() => {
+      success.value = false;
+    }, 5000);
   } catch (err: unknown) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <template>

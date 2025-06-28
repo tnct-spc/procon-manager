@@ -1,51 +1,51 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useAppStore } from '../../stores/counter'
-import type { Item, CreateItemRequest } from '../../types/api'
-import { getErrorMessage } from '../../types/error'
+import { onMounted, ref } from "vue";
+import { useAppStore } from "../../stores/counter";
+import type { CreateItemRequest, Item } from "../../types/api";
+import { getErrorMessage } from "../../types/error";
 
 interface Props {
-  item: Item
+  item: Item;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
 
-const store = useAppStore()
-const loading = ref(false)
-const error = ref<string | null>(null)
+const store = useAppStore();
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 const formData = ref<CreateItemRequest>({
-  name: '',
-  description: '',
-  category: 'general',
+  name: "",
+  description: "",
+  category: "general",
   author: undefined,
   isbn: undefined,
-  macAddress: undefined
-})
+  macAddress: undefined,
+});
 
 const handleCategoryChange = () => {
   // Clear category-specific fields when category changes
-  formData.value.author = undefined
-  formData.value.isbn = undefined
-  formData.value.macAddress = undefined
-}
+  formData.value.author = undefined;
+  formData.value.isbn = undefined;
+  formData.value.macAddress = undefined;
+};
 
 const handleSubmit = async () => {
-  loading.value = true
-  error.value = null
-  
+  loading.value = true;
+  error.value = null;
+
   try {
-    await store.updateItem(props.item.id, formData.value)
-    emit('close')
+    await store.updateItem(props.item.id, formData.value);
+    emit("close");
   } catch (err: unknown) {
-    error.value = getErrorMessage(err)
+    error.value = getErrorMessage(err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(() => {
   // Initialize form with current item data
@@ -55,9 +55,9 @@ onMounted(() => {
     category: props.item.category,
     author: props.item.author,
     isbn: props.item.isbn,
-    macAddress: props.item.macAddress
-  }
-})
+    macAddress: props.item.macAddress,
+  };
+});
 </script>
 <template>
   <div :class="$style.editForm">
