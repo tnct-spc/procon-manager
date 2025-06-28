@@ -24,8 +24,8 @@ const login = async () => {
     const { accessToken, userId } = res.data;
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("userId", userId);
-    axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-    router.push("/dashboard");
+    axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+    router.push("pn/dashboard");
   } catch (err: unknown) {
     errorMessage.value = getErrorMessage(err);
   } finally {
