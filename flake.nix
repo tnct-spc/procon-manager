@@ -4,7 +4,10 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
-    git-hooks-nix.url = "github:cachix/git-hooks.nix";
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     services-flake.url = "github:juspay/services-flake";
     process-compose-flake.url = "github:Platonic-Systems/process-compose-flake";
     rust-overlay = {
@@ -83,7 +86,7 @@
             packages = with pkgs; [
               nodejs
               pnpm
-              rust-bin.stable.latest.default
+              toolchain
               cargo-make
               cargo-nextest
               sqlx-cli
@@ -126,7 +129,7 @@
                 clippy-item-manager = {
                   enable = true;
                   name = "clippy-item-manager";
-                  entry = "env SQLX_OFFLINE=true ${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets -- -Dwarnings";
+                  entry = "env SQLX_OFFLINE=true ${toolchain}/bin/cargo-clippy --offline --all --all-targets -- -Dwarnings";
                   pass_filenames = false;
                   extraPackages = [ toolchain ];
                 };
@@ -138,10 +141,20 @@
             check.enable = false;
             settings = {
               hooks = hooks // {
+                eslint = {
+                  enable = true;
+                  entry = "${pkgs.bash}/bin/bash -c 'cd frontend && ${pkgs.pnpm}/bin/pnpm lint'";
+                  files = "\\.(js|ts|vue)$";
+                };
+                prettier = {
+                  enable = true;
+                  entry = "${pkgs.bash}/bin/bash -c 'cd frontend && ${pkgs.pnpm}/bin/pnpm format'";
+                  files = "\\.(js|ts|vue)$";
+                };
                 clippy-item-manager = {
                   enable = true;
                   name = "clippy-item-manager";
-                  entry = "env SQLX_OFFLINE=true ${pkgs.rust-bin.stable.latest.default}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
+                  entry = "env SQLX_OFFLINE=true ${toolchain}/bin/cargo-clippy --offline --all --all-targets --manifest-path item-manager/Cargo.toml -- -Dwarnings";
                   files = "\\.(rs)$";
                   pass_filenames = false;
                   extraPackages = [ toolchain ];
