@@ -1,0 +1,57 @@
+name: Frontend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, frontend]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend_ci.yaml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend_ci.yaml"
+
+jobs:
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: yadokani389
+
+      - name: Restore binary cache
+        uses: ./.github/actions/binary-cache
+        with:
+          package: .#devShells.x86_64-linux.default
+
+      - name: Install dependencies
+        run: nix develop -c pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: nix develop -c pnpm type-check
+
+      - name: Lint check
+        run: nix develop -c pnpm lint
+
+      - name: Format check
+        run: nix develop -c prettier --check src/
+
+      - name: Build application
+        run: nix develop -c pnpm build
+
+      - name: Run flake check
+        run: nix flake check -L
+        working-directory: .
