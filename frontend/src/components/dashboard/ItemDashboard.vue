@@ -1,108 +1,105 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useAppStore } from "../../stores/counter";
-import type { Item } from "../../types/api";
-import AddButton from "../ui/AddButton.vue";
-import CreateItemForm from "./CreateItemForm.vue";
-import EditItemForm from "./EditItemForm.vue";
+import { onMounted, ref } from 'vue'
+import { useAppStore } from '../../stores/counter'
+import type { Item } from '../../types/api'
+import type { ApiError } from '../../types/error'
+import AddButton from '../ui/AddButton.vue'
+import CreateItemForm from './CreateItemForm.vue'
+import EditItemForm from './EditItemForm.vue'
 
-const store = useAppStore();
-const showCreateForm = ref(false);
+const store = useAppStore()
+const showCreateForm = ref(false)
 
 onMounted(async () => {
-  await store.fetchItems();
-  await store.getCurrentUser();
-});
+  await store.fetchItems()
+  await store.getCurrentUser()
+})
 
 const handleCheckout = async (item: Item) => {
   try {
-    await store.checkoutItem(item.id);
-  } catch (error: any) {
-    console.error("チェックアウトエラー:", error);
-    if (error.response?.status === 404) {
-      alert(
-        "サーバーに接続できません。バックエンドAPIが起動していることを確認してください。",
-      );
-    } else if (error.response?.status === 409) {
-      alert("このアイテムは既にチェックアウトされています。");
+    await store.checkoutItem(item.id)
+  } catch (error: unknown) {
+    console.error('チェックアウトエラー:', error)
+    const apiError = error as ApiError
+    if (apiError.response?.status === 404) {
+      alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
+    } else if (apiError.response?.status === 409) {
+      alert('このアイテムは既にチェックアウトされています。')
     } else {
-      alert(
-        `チェックアウトに失敗しました: ${error.message || "サーバーエラー"}`,
-      );
+      alert(`チェックアウトに失敗しました: ${apiError.message || 'サーバーエラー'}`)
     }
   }
-};
+}
 
 const handleReturn = async (item: Item) => {
   if (item.checkout) {
     try {
-      await store.returnItem(item.id, item.checkout.id);
-    } catch (error: any) {
-      console.error("返却エラー:", error);
-      if (error.response?.status === 404) {
-        alert(
-          "サーバーに接続できません。バックエンドAPIが起動していることを確認してください。",
-        );
+      await store.returnItem(item.id, item.checkout.id)
+    } catch (error: unknown) {
+      console.error('返却エラー:', error)
+      const apiError = error as ApiError
+      if (apiError.response?.status === 404) {
+        alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
       } else {
-        alert(`返却に失敗しました: ${error.message || "サーバーエラー"}`);
+        alert(`返却に失敗しました: ${apiError.message || 'サーバーエラー'}`)
       }
     }
   }
-};
+}
 
 const getItemTypeLabel = (item: Item) => {
   switch (item.category) {
-    case "general":
-      return "一般";
-    case "book":
-      return "書籍";
-    case "laptop":
-      return "ノートPC";
+    case 'general':
+      return '一般'
+    case 'book':
+      return '書籍'
+    case 'laptop':
+      return 'ノートPC'
     default:
-      return "不明";
+      return '不明'
   }
-};
+}
 
 const getItemDetails = (item: Item) => {
   switch (item.category) {
-    case "book":
-      return `著者: ${item.author}, ISBN: ${item.isbn}`;
-    case "laptop":
-      return `MAC: ${item.macAddress}`;
+    case 'book':
+      return `著者: ${item.author}, ISBN: ${item.isbn}`
+    case 'laptop':
+      return `MAC: ${item.macAddress}`
     default:
-      return "";
+      return ''
   }
-};
+}
 
-const showEditForm = ref(false);
-const editingItem = ref<Item | null>(null);
-const showMenu = ref<{ [key: string]: boolean }>({});
+const showEditForm = ref(false)
+const editingItem = ref<Item | null>(null)
+const showMenu = ref<{ [key: string]: boolean }>({})
 
 const toggleMenu = (itemId: string) => {
   showMenu.value = {
     ...showMenu.value,
     [itemId]: !showMenu.value[itemId],
-  };
-};
+  }
+}
 
 const editItem = (item: Item) => {
-  editingItem.value = item;
-  showEditForm.value = true;
-  showMenu.value = {};
-};
+  editingItem.value = item
+  showEditForm.value = true
+  showMenu.value = {}
+}
 
 const deleteItem = async (itemId: string) => {
-  if (!confirm("このアイテムを削除しますか？この操作は取り消せません。"))
-    return;
+  if (!confirm('このアイテムを削除しますか？この操作は取り消せません。')) return
 
   try {
-    await store.deleteItem(itemId);
-  } catch (error: any) {
-    console.error("削除エラー:", error);
-    alert(`削除に失敗しました: ${error.message || "サーバーエラー"}`);
+    await store.deleteItem(itemId)
+  } catch (error: unknown) {
+    console.error('削除エラー:', error)
+    const apiError = error as ApiError
+    alert(`削除に失敗しました: ${apiError.message || 'サーバーエラー'}`)
   }
-  showMenu.value = {};
-};
+  showMenu.value = {}
+}
 </script>
 
 <template>
@@ -115,14 +112,12 @@ const deleteItem = async (itemId: string) => {
       {{ store.error }}
     </div>
 
-    <div v-if="store.loading" :class="$style.loading">
-      読み込み中...
-    </div>
+    <div v-if="store.loading" :class="$style.loading">読み込み中...</div>
 
     <div v-else :class="$style.itemList">
-      <div 
-        v-for="item in store.items" 
-        :key="item.id" 
+      <div
+        v-for="item in store.items"
+        :key="item.id"
         :class="[$style.itemCard, { [$style.checkedOut]: item.checkout }]"
       >
         <div :class="$style.itemInfo">
@@ -130,9 +125,9 @@ const deleteItem = async (itemId: string) => {
             <h3 :class="$style.itemName">{{ item.name }}</h3>
             <span :class="$style.itemType">{{ getItemTypeLabel(item) }}</span>
           </div>
-          
+
           <p :class="$style.description">{{ item.description }}</p>
-          
+
           <div v-if="getItemDetails(item)" :class="$style.details">
             {{ getItemDetails(item) }}
           </div>
@@ -140,13 +135,15 @@ const deleteItem = async (itemId: string) => {
           <div v-if="item.checkout" :class="$style.checkoutInfo">
             <span :class="$style.checkoutLabel">チェックアウト中:</span>
             <span :class="$style.checkoutUser">{{ item.checkout.checkedOutBy.name }}</span>
-            <span :class="$style.checkoutDate">({{ new Date(item.checkout.checkedOutAt).toLocaleDateString('ja-JP') }})</span>
+            <span :class="$style.checkoutDate"
+              >({{ new Date(item.checkout.checkedOutAt).toLocaleDateString('ja-JP') }})</span
+            >
           </div>
         </div>
 
         <div :class="$style.itemActions">
           <div :class="$style.primaryActions">
-            <button 
+            <button
               v-if="!item.checkout"
               @click="handleCheckout(item)"
               :class="$style.checkoutBtn"
@@ -154,9 +151,13 @@ const deleteItem = async (itemId: string) => {
             >
               チェックアウト
             </button>
-            
-            <button 
-              v-else-if="store.currentUser && (store.currentUser.role === 'Admin' || item.checkout.checkedOutBy.id === store.currentUser.id)"
+
+            <button
+              v-else-if="
+                store.currentUser &&
+                (store.currentUser.role === 'Admin' ||
+                  item.checkout.checkedOutBy.id === store.currentUser.id)
+              "
               @click="handleReturn(item)"
               :class="$style.returnBtn"
               :disabled="store.loading"
@@ -164,24 +165,19 @@ const deleteItem = async (itemId: string) => {
               返却
             </button>
           </div>
-          
+
           <div :class="$style.menuContainer">
-            <button 
+            <button
               @click="toggleMenu(item.id)"
               :class="$style.menuBtn"
               :aria-label="'メニューを開く'"
             >
               ⋮
             </button>
-            
+
             <div v-if="showMenu[item.id]" :class="$style.dropdown">
-              <button 
-                @click="editItem(item)"
-                :class="$style.dropdownItem"
-              >
-                編集
-              </button>
-              <button 
+              <button @click="editItem(item)" :class="$style.dropdownItem">編集</button>
+              <button
                 @click="deleteItem(item.id)"
                 :class="[$style.dropdownItem, $style.deleteAction]"
               >
@@ -199,19 +195,19 @@ const deleteItem = async (itemId: string) => {
 
     <!-- Pagination Controls -->
     <div v-if="store.totalPages > 1" :class="$style.pagination">
-      <button 
+      <button
         @click="store.fetchItems(store.currentPage - 1)"
         :disabled="store.currentPage <= 1 || store.loading"
         :class="[$style.paginationBtn, $style.prevBtn]"
       >
         前へ
       </button>
-      
+
       <span :class="$style.pageInfo">
         {{ store.currentPage }} / {{ store.totalPages }} ページ (合計: {{ store.totalItems }} 件)
       </span>
-      
-      <button 
+
+      <button
         @click="store.fetchItems(store.currentPage + 1)"
         :disabled="store.currentPage >= store.totalPages || store.loading"
         :class="[$style.paginationBtn, $style.nextBtn]"
@@ -220,11 +216,8 @@ const deleteItem = async (itemId: string) => {
       </button>
     </div>
 
-    <CreateItemForm 
-      v-if="showCreateForm"
-      @close="showCreateForm = false"
-    />
-    
+    <CreateItemForm v-if="showCreateForm" @close="showCreateForm = false" />
+
     <!-- Edit Item Form Modal -->
     <div v-if="showEditForm" :class="$style.modalOverlay" @click="showEditForm = false">
       <div :class="$style.modal" @click.stop>
@@ -233,16 +226,16 @@ const deleteItem = async (itemId: string) => {
           <button @click="showEditForm = false" :class="$style.closeBtn">×</button>
         </div>
         <div :class="$style.modalContent">
-          <EditItemForm 
+          <EditItemForm
             v-if="editingItem"
             :item="editingItem"
-            @close="showEditForm = false; editingItem = null"
+            @close="((showEditForm = false), (editingItem = null))"
           />
         </div>
       </div>
     </div>
 
-    <AddButton 
+    <AddButton
       @click="showCreateForm = true"
       :disabled="store.loading"
       label="新しいアイテムを追加"
@@ -420,7 +413,8 @@ const deleteItem = async (itemId: string) => {
   gap: 8px;
 }
 
-.checkoutBtn, .returnBtn {
+.checkoutBtn,
+.returnBtn {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -447,7 +441,8 @@ const deleteItem = async (itemId: string) => {
   background: color-mix(in srgb, var(--color-warning) 80%, black);
 }
 
-.checkoutBtn:disabled, .returnBtn:disabled {
+.checkoutBtn:disabled,
+.returnBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import AppHeader from "./components/navigation/AppHeader.vue";
+import AppHeader from './components/navigation/AppHeader.vue'
 </script>
 
 <template>
-
   <div :class="$style.tab">
     <AppHeader />
   </div>
   <div :class="$style.container">
     <router-view />
   </div>
-  
 </template>
 
 <style module>

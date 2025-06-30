@@ -1,78 +1,76 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useAppStore } from "../../stores/counter";
-import type { CreateItemRequest } from "../../types/api";
+import { computed, ref } from 'vue'
+import { useAppStore } from '../../stores/counter'
+import type { CreateItemRequest } from '../../types/api'
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const store = useAppStore();
+const store = useAppStore()
 
 const formData = ref({
-  category: "general" as "general" | "book" | "laptop",
-  name: "",
-  description: "",
-  author: "",
-  isbn: "",
-  mac_address: "",
-});
+  category: 'general' as 'general' | 'book' | 'laptop',
+  name: '',
+  description: '',
+  author: '',
+  isbn: '',
+  macAddress: '',
+})
 
 const isFormValid = computed(() => {
-  const { category, name, description, author, isbn, mac_address } =
-    formData.value;
+  const { category, name, description, author, isbn, macAddress } = formData.value
 
-  if (!name || !description) return false;
+  if (!name || !description) return false
 
-  if (category === "book" && (!author || !isbn)) return false;
-  if (category === "laptop" && !mac_address) return false;
+  if (category === 'book' && (!author || !isbn)) return false
+  if (category === 'laptop' && !macAddress) return false
 
-  return true;
-});
+  return true
+})
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return;
+  if (!isFormValid.value) return
 
-  const { category, name, description, author, isbn, mac_address } =
-    formData.value;
+  const { category, name, description, author, isbn, macAddress } = formData.value
 
-  let itemData: CreateItemRequest;
+  let itemData: CreateItemRequest
 
   switch (category) {
-    case "book":
-      itemData = { category, name, description, author, isbn };
-      break;
-    case "laptop":
-      itemData = { category, name, description, mac_address };
-      break;
+    case 'book':
+      itemData = { category, name, description, author, isbn }
+      break
+    case 'laptop':
+      itemData = { category, name, description, mac_address: macAddress }
+      break
     default:
-      itemData = { category: "general", name, description };
+      itemData = { category: 'general', name, description }
   }
 
   try {
-    await store.createItem(itemData);
-    emit("close");
-    resetForm();
+    await store.createItem(itemData)
+    emit('close')
+    resetForm()
   } catch (error) {
-    console.error("アイテム作成エラー:", error);
+    console.error('アイテム作成エラー:', error)
   }
-};
+}
 
 const resetForm = () => {
   formData.value = {
-    category: "general",
-    name: "",
-    description: "",
-    author: "",
-    isbn: "",
-    mac_address: "",
-  };
-};
+    category: 'general',
+    name: '',
+    description: '',
+    author: '',
+    isbn: '',
+    macAddress: '',
+  }
+}
 
 const handleCancel = () => {
-  resetForm();
-  emit("close");
-};
+  resetForm()
+  emit('close')
+}
 </script>
 
 <template>
@@ -95,20 +93,14 @@ const handleCancel = () => {
 
         <div :class="$style.field">
           <label for="name">名前 *</label>
-          <input 
-            id="name"
-            v-model="formData.name" 
-            type="text" 
-            required
-            :class="$style.input"
-          />
+          <input id="name" v-model="formData.name" type="text" required :class="$style.input" />
         </div>
 
         <div :class="$style.field">
           <label for="description">説明 *</label>
-          <textarea 
+          <textarea
             id="description"
-            v-model="formData.description" 
+            v-model="formData.description"
             required
             :class="$style.textarea"
             rows="3"
@@ -118,10 +110,10 @@ const handleCancel = () => {
         <div v-if="formData.category === 'book'" :class="$style.categoryFields">
           <div :class="$style.field">
             <label for="author">著者 *</label>
-            <input 
+            <input
               id="author"
-              v-model="formData.author" 
-              type="text" 
+              v-model="formData.author"
+              type="text"
               required
               :class="$style.input"
             />
@@ -129,23 +121,17 @@ const handleCancel = () => {
 
           <div :class="$style.field">
             <label for="isbn">ISBN *</label>
-            <input 
-              id="isbn"
-              v-model="formData.isbn" 
-              type="text" 
-              required
-              :class="$style.input"
-            />
+            <input id="isbn" v-model="formData.isbn" type="text" required :class="$style.input" />
           </div>
         </div>
 
         <div v-if="formData.category === 'laptop'" :class="$style.categoryFields">
           <div :class="$style.field">
-            <label for="mac_address">MACアドレス *</label>
-            <input 
-              id="mac_address"
-              v-model="formData.mac_address" 
-              type="text" 
+            <label for="macAddress">MACアドレス *</label>
+            <input
+              id="macAddress"
+              v-model="formData.macAddress"
+              type="text"
               placeholder="00:00:00:00:00:00"
               required
               :class="$style.input"
@@ -158,18 +144,8 @@ const handleCancel = () => {
         </div>
 
         <div :class="$style.actions">
-          <button 
-            type="button" 
-            @click="handleCancel"
-            :class="$style.cancelBtn"
-          >
-            キャンセル
-          </button>
-          <button 
-            type="submit"
-            :class="$style.submitBtn"
-            :disabled="!isFormValid || store.loading"
-          >
+          <button type="button" @click="handleCancel" :class="$style.cancelBtn">キャンセル</button>
+          <button type="submit" :class="$style.submitBtn" :disabled="!isFormValid || store.loading">
             {{ store.loading ? '作成中...' : '作成' }}
           </button>
         </div>
@@ -252,7 +228,9 @@ const handleCancel = () => {
   color: var(--color-text);
 }
 
-.input, .select, .textarea {
+.input,
+.select,
+.textarea {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
@@ -264,7 +242,9 @@ const handleCancel = () => {
   transition: border-color 0.2s;
 }
 
-.input:focus, .select:focus, .textarea:focus {
+.input:focus,
+.select:focus,
+.textarea:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
@@ -299,7 +279,8 @@ const handleCancel = () => {
   border-top: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 
-.cancelBtn, .submitBtn {
+.cancelBtn,
+.submitBtn {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;

@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import axios from "axios";
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import type { LoginResponse } from "../../types/api";
-import { getErrorMessage } from "../../types/error";
+import axios from 'axios'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { LoginResponse } from '../../types/api'
+import { getErrorMessage } from '../../types/error'
 
-const email = ref("");
-const password = ref("");
-const showPassword = ref(false);
-const errorMessage = ref("");
-const isSubmitting = ref(false);
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const errorMessage = ref('')
+const isSubmitting = ref(false)
 
-const router = useRouter();
+const router = useRouter()
 
 const login = async () => {
-  isSubmitting.value = true;
-  errorMessage.value = "";
+  isSubmitting.value = true
+  errorMessage.value = ''
   try {
     const res = await axios.post<LoginResponse>(
-      "https://procon-manager-item-manager-zcuq.shuttle.app/auth/login",
+      'https://procon-manager-item-manager-zcuq.shuttle.app/auth/login',
       { email: email.value, password: password.value },
-    );
-    const { accessToken, userId } = res.data;
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("userId", userId);
-    axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-    router.push("pn/dashboard");
+    )
+    const { accessToken, userId } = res.data
+    localStorage.setItem('accessToken', accessToken)
+    localStorage.setItem('userId', userId)
+    axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`
+    router.push('pn/dashboard')
   } catch (err: unknown) {
-    errorMessage.value = getErrorMessage(err);
+    errorMessage.value = getErrorMessage(err)
   } finally {
-    isSubmitting.value = false;
+    isSubmitting.value = false
   }
-};
+}
 </script>
 
 <template>
@@ -50,9 +50,15 @@ const login = async () => {
 
         <label class="form-label" for="password">password</label>
         <div class="password-group">
-          <input v-model="password" :type="showPassword ? 'text' : 'password'" id="password" required class="input" />
+          <input
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            id="password"
+            required
+            class="input"
+          />
           <button type="button" class="toggle" @click="showPassword = !showPassword">
-            {{ showPassword ? '🐈' : '🐈‍⬛'}}
+            {{ showPassword ? '🐈' : '🐈‍⬛' }}
           </button>
         </div>
 

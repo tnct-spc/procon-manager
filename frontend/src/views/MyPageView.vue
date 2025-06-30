@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
-import BorrowedItemsList from "../components/mypage/BorrowedItemsList.vue";
-import PasswordChangeForm from "../components/mypage/PasswordChangeForm.vue";
-import { useAppStore } from "../stores/counter";
+import { onMounted } from 'vue'
+import BorrowedItemsList from '../components/mypage/BorrowedItemsList.vue'
+import PasswordChangeForm from '../components/mypage/PasswordChangeForm.vue'
+import { useAppStore } from '../stores/counter'
 
-const store = useAppStore();
+const store = useAppStore()
 
 onMounted(async () => {
-  await store.getCurrentUser();
-});
+  await store.getCurrentUser()
+})
 
 const onPasswordChangeSuccess = () => {
   // パスワード変更成功時の処理
-  alert("パスワードが正常に変更されました。");
-};
+  alert('パスワードが正常に変更されました。')
+}
 </script>
 
 <template>

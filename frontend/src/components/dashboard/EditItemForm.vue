@@ -1,51 +1,77 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useAppStore } from "../../stores/counter";
-import type { CreateItemRequest, Item } from "../../types/api";
-import { getErrorMessage } from "../../types/error";
+import { onMounted, ref } from 'vue'
+import { useAppStore } from '../../stores/counter'
+import type { CreateItemRequest, Item } from '../../types/api'
+import { getErrorMessage } from '../../types/error'
 
 interface Props {
-  item: Item;
+  item: Item
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const store = useAppStore();
-const loading = ref(false);
-const error = ref<string | null>(null);
+const store = useAppStore()
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-const formData = ref<CreateItemRequest>({
-  name: "",
-  description: "",
-  category: "general",
-  author: undefined,
-  isbn: undefined,
-  macAddress: undefined,
-});
+const formData = ref({
+  name: '',
+  description: '',
+  category: 'general' as 'general' | 'book' | 'laptop',
+  author: undefined as string | undefined,
+  isbn: undefined as string | undefined,
+  macAddress: undefined as string | undefined,
+})
 
 const handleCategoryChange = () => {
   // Clear category-specific fields when category changes
-  formData.value.author = undefined;
-  formData.value.isbn = undefined;
-  formData.value.macAddress = undefined;
-};
+  formData.value.author = undefined
+  formData.value.isbn = undefined
+  formData.value.macAddress = undefined
+}
 
 const handleSubmit = async () => {
-  loading.value = true;
-  error.value = null;
+  loading.value = true
+  error.value = null
 
   try {
-    await store.updateItem(props.item.id, formData.value);
-    emit("close");
+    const requestData: CreateItemRequest = (() => {
+      switch (formData.value.category) {
+        case 'book':
+          return {
+            category: 'book',
+            name: formData.value.name,
+            description: formData.value.description,
+            author: formData.value.author || '',
+            isbn: formData.value.isbn || '',
+          }
+        case 'laptop':
+          return {
+            category: 'laptop',
+            name: formData.value.name,
+            description: formData.value.description,
+            mac_address: formData.value.macAddress || '',
+          }
+        default:
+          return {
+            category: 'general',
+            name: formData.value.name,
+            description: formData.value.description,
+          }
+      }
+    })()
+
+    await store.updateItem(props.item.id, requestData)
+    emit('close')
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
+    error.value = getErrorMessage(err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 onMounted(() => {
   // Initialize form with current item data
@@ -53,23 +79,34 @@ onMounted(() => {
     name: props.item.name,
     description: props.item.description,
     category: props.item.category,
-    author: props.item.author,
-    isbn: props.item.isbn,
-    macAddress: props.item.macAddress,
-  };
-});
+    author: props.item.category === 'book' ? props.item.author : undefined,
+    isbn: props.item.category === 'book' ? props.item.isbn : undefined,
+    macAddress: props.item.category === 'laptop' ? props.item.macAddress : undefined,
+  }
+})
 </script>
 <template>
   <div :class="$style.editForm">
     <form @submit.prevent="handleSubmit">
       <div :class="$style.formGroup">
         <label :class="$style.label">アイテム名</label>
-        <input v-model="formData.name" type="text" :class="$style.input" required placeholder="アイテム名を入力" />
+        <input
+          v-model="formData.name"
+          type="text"
+          :class="$style.input"
+          required
+          placeholder="アイテム名を入力"
+        />
       </div>
 
       <div :class="$style.formGroup">
         <label :class="$style.label">説明</label>
-        <textarea v-model="formData.description" :class="$style.textarea" rows="3" placeholder="アイテムの説明を入力" />
+        <textarea
+          v-model="formData.description"
+          :class="$style.textarea"
+          rows="3"
+          placeholder="アイテムの説明を入力"
+        />
       </div>
 
       <div :class="$style.formGroup">
@@ -85,12 +122,22 @@ onMounted(() => {
       <div v-if="formData.category === 'book'" :class="$style.categoryFields">
         <div :class="$style.formGroup">
           <label :class="$style.label">著者</label>
-          <input v-model="formData.author" type="text" :class="$style.input" placeholder="著者名を入力" />
+          <input
+            v-model="formData.author"
+            type="text"
+            :class="$style.input"
+            placeholder="著者名を入力"
+          />
         </div>
 
         <div :class="$style.formGroup">
           <label :class="$style.label">ISBN</label>
-          <input v-model="formData.isbn" type="text" :class="$style.input" placeholder="ISBN番号を入力" />
+          <input
+            v-model="formData.isbn"
+            type="text"
+            :class="$style.input"
+            placeholder="ISBN番号を入力"
+          />
         </div>
       </div>
 
@@ -98,7 +145,12 @@ onMounted(() => {
       <div v-if="formData.category === 'laptop'" :class="$style.categoryFields">
         <div :class="$style.formGroup">
           <label :class="$style.label">MACアドレス</label>
-          <input v-model="formData.macAddress" type="text" :class="$style.input" placeholder="MACアドレスを入力" />
+          <input
+            v-model="formData.macAddress"
+            type="text"
+            :class="$style.input"
+            placeholder="MACアドレスを入力"
+          />
         </div>
       </div>
 

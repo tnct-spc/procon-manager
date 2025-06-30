@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router";
-import { useAppStore } from "../../stores/counter";
+import { useRouter } from 'vue-router'
+import { useAppStore } from '../../stores/counter'
 
-const router = useRouter();
-const store = useAppStore();
-const isLoggedIn = !!localStorage.getItem("accessToken");
+const router = useRouter()
+const store = useAppStore()
 
 const handleLogout = () => {
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("userId");
-  store.currentUser = null;
-  router.push("/login");
-};
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('userId')
+  store.currentUser = null
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -28,8 +27,12 @@ const handleLogout = () => {
         <router-link to="/mypage" :class="$style.navLink" active-class="active">
           マイページ
         </router-link>
-        <router-link v-if="store.currentUser?.role === 'Admin'" to="/admin" :class="$style.navLink"
-          active-class="active">
+        <router-link
+          v-if="store.currentUser?.role === 'Admin'"
+          to="/admin"
+          :class="$style.navLink"
+          active-class="active"
+        >
           管理者操作
         </router-link>
       </nav>
@@ -39,9 +42,7 @@ const handleLogout = () => {
         <span :class="$style.role">({{ store.currentUser.role }})</span>
       </div>
 
-      <button @click="handleLogout" :class="$style.logoutBtn">
-        ログアウト
-      </button>
+      <button @click="handleLogout" :class="$style.logoutBtn">ログアウト</button>
     </div>
   </div>
 </template>

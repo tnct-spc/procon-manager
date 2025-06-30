@@ -1,121 +1,120 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import api from "../services/api";
-import { useAppStore } from "../stores/counter";
-import type { User } from "../types/api";
-import { getErrorMessage } from "../types/error";
+import { onMounted, ref } from 'vue'
+import api from '../services/api'
+import { useAppStore } from '../stores/counter'
+import type { User } from '../types/api'
+import { getErrorMessage } from '../types/error'
 
-const store = useAppStore();
-const users = ref<User[]>([]);
-const error = ref<string | null>(null);
-const isUpdating = ref(false);
-const showAddUserModal = ref(false);
-const isCreating = ref(false);
-const addUserError = ref<string | null>(null);
+const store = useAppStore()
+const users = ref<User[]>([])
+const error = ref<string | null>(null)
+const isUpdating = ref(false)
+const showAddUserModal = ref(false)
+const isCreating = ref(false)
+const addUserError = ref<string | null>(null)
 const newUser = ref({
-  name: "",
-  email: "",
-  password: "",
-  role: "User" as "User" | "Admin",
-});
+  name: '',
+  email: '',
+  password: '',
+  role: 'User' as 'User' | 'Admin',
+})
 
 const fetchUsers = async () => {
   try {
-    store.loading = true;
-    error.value = null;
-    const response = await api.get("/users");
-    users.value = response.data.items || response.data;
-    console.log("ユーザー一覧:", users.value);
+    store.loading = true
+    error.value = null
+    const response = await api.get('/users')
+    users.value = response.data.items || response.data
+    console.log('ユーザー一覧:', users.value)
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
-    console.error("ユーザー一覧の取得に失敗:", err);
+    error.value = getErrorMessage(err)
+    console.error('ユーザー一覧の取得に失敗:', err)
   } finally {
-    store.loading = false;
+    store.loading = false
   }
-};
+}
 
 const promoteToAdmin = async (userId: string) => {
-  if (!confirm("このユーザーをAdminに昇格させますか？")) return;
+  if (!confirm('このユーザーをAdminに昇格させますか？')) return
 
   try {
-    isUpdating.value = true;
-    await api.put(`/users/${userId}/role`, { role: "Admin" });
-    await fetchUsers();
+    isUpdating.value = true
+    await api.put(`/users/${userId}/role`, { role: 'Admin' })
+    await fetchUsers()
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
-    console.error("Admin昇格に失敗:", err);
+    error.value = getErrorMessage(err)
+    console.error('Admin昇格に失敗:', err)
   } finally {
-    isUpdating.value = false;
+    isUpdating.value = false
   }
-};
+}
 
 const demoteToUser = async (userId: string) => {
-  if (!confirm("このAdminをUserに降格させますか？")) return;
+  if (!confirm('このAdminをUserに降格させますか？')) return
 
   try {
-    isUpdating.value = true;
-    await api.put(`/users/${userId}/role`, { role: "User" });
-    await fetchUsers();
+    isUpdating.value = true
+    await api.put(`/users/${userId}/role`, { role: 'User' })
+    await fetchUsers()
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
-    console.error("User降格に失敗:", err);
+    error.value = getErrorMessage(err)
+    console.error('User降格に失敗:', err)
   } finally {
-    isUpdating.value = false;
+    isUpdating.value = false
   }
-};
+}
 
 const deleteUser = async (userId: string) => {
-  if (!confirm("このユーザーを削除しますか？この操作は取り消せません。"))
-    return;
+  if (!confirm('このユーザーを削除しますか？この操作は取り消せません。')) return
 
   try {
-    isUpdating.value = true;
-    await api.delete(`/users/${userId}`);
-    await fetchUsers();
+    isUpdating.value = true
+    await api.delete(`/users/${userId}`)
+    await fetchUsers()
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
-    console.error("ユーザー削除に失敗:", err);
+    error.value = getErrorMessage(err)
+    console.error('ユーザー削除に失敗:', err)
   } finally {
-    isUpdating.value = false;
+    isUpdating.value = false
   }
-};
+}
 
 const createUser = async () => {
   try {
-    isCreating.value = true;
-    addUserError.value = null;
+    isCreating.value = true
+    addUserError.value = null
 
-    await api.post("/users", {
+    await api.post('/users', {
       name: newUser.value.name,
       email: newUser.value.email,
       password: newUser.value.password,
       role: newUser.value.role,
-    });
+    })
 
-    await fetchUsers();
-    closeModal();
+    await fetchUsers()
+    closeModal()
   } catch (err: unknown) {
-    addUserError.value = getErrorMessage(err);
-    console.error("ユーザー作成に失敗:", err);
+    addUserError.value = getErrorMessage(err)
+    console.error('ユーザー作成に失敗:', err)
   } finally {
-    isCreating.value = false;
+    isCreating.value = false
   }
-};
+}
 
 const closeModal = () => {
-  showAddUserModal.value = false;
-  addUserError.value = null;
+  showAddUserModal.value = false
+  addUserError.value = null
   newUser.value = {
-    name: "",
-    email: "",
-    password: "",
-    role: "User",
-  };
-};
+    name: '',
+    email: '',
+    password: '',
+    role: 'User',
+  }
+}
 
 onMounted(() => {
-  fetchUsers();
-});
+  fetchUsers()
+})
 </script>
 
 <template>
@@ -130,9 +129,7 @@ onMounted(() => {
         </button>
       </div>
 
-      <div v-if="store.loading" :class="$style.loading">
-        読み込み中...
-      </div>
+      <div v-if="store.loading" :class="$style.loading">読み込み中...</div>
 
       <div v-else-if="error" :class="$style.error">
         {{ error }}
@@ -145,28 +142,42 @@ onMounted(() => {
             <div :class="$style.userEmail">{{ user.email }}</div>
             <div :class="$style.userRole">
               <span :class="$style.roleLabel">権限:</span>
-              <span :class="[
-                $style.roleBadge, 
-                user.role === 'Admin' ? $style.adminBadge : $style.userBadge
-              ]">
+              <span
+                :class="[
+                  $style.roleBadge,
+                  user.role === 'Admin' ? $style.adminBadge : $style.userBadge,
+                ]"
+              >
                 {{ user.role }}
               </span>
             </div>
           </div>
 
           <div :class="$style.userActions">
-            <button v-if="user.role === 'User'" @click="promoteToAdmin(user.id)"
-              :class="[$style.actionBtn, $style.promoteBtn]" :disabled="isUpdating">
+            <button
+              v-if="user.role === 'User'"
+              @click="promoteToAdmin(user.id)"
+              :class="[$style.actionBtn, $style.promoteBtn]"
+              :disabled="isUpdating"
+            >
               Admin昇格
             </button>
 
-            <button v-if="user.role === 'Admin' && user.id !== store.currentUser?.id" @click="demoteToUser(user.id)"
-              :class="[$style.actionBtn, $style.demoteBtn]" :disabled="isUpdating">
+            <button
+              v-if="user.role === 'Admin' && user.id !== store.currentUser?.id"
+              @click="demoteToUser(user.id)"
+              :class="[$style.actionBtn, $style.demoteBtn]"
+              :disabled="isUpdating"
+            >
               User降格
             </button>
 
-            <button v-if="user.id !== store.currentUser?.id" @click="deleteUser(user.id)"
-              :class="[$style.actionBtn, $style.deleteBtn]" :disabled="isUpdating">
+            <button
+              v-if="user.id !== store.currentUser?.id"
+              @click="deleteUser(user.id)"
+              :class="[$style.actionBtn, $style.deleteBtn]"
+              :disabled="isUpdating"
+            >
               アカウント削除
             </button>
           </div>
@@ -185,19 +196,36 @@ onMounted(() => {
         <form @submit.prevent="createUser" :class="$style.addUserForm">
           <div :class="$style.formGroup">
             <label :class="$style.label">名前</label>
-            <input v-model="newUser.name" type="text" :class="$style.input" required placeholder="ユーザー名を入力" />
+            <input
+              v-model="newUser.name"
+              type="text"
+              :class="$style.input"
+              required
+              placeholder="ユーザー名を入力"
+            />
           </div>
 
           <div :class="$style.formGroup">
             <label :class="$style.label">メールアドレス</label>
-            <input v-model="newUser.email" type="email" :class="$style.input" required
-              placeholder="example@email.com" />
+            <input
+              v-model="newUser.email"
+              type="email"
+              :class="$style.input"
+              required
+              placeholder="example@email.com"
+            />
           </div>
 
           <div :class="$style.formGroup">
             <label :class="$style.label">パスワード</label>
-            <input v-model="newUser.password" type="password" :class="$style.input" required placeholder="パスワードを入力"
-              minlength="6" />
+            <input
+              v-model="newUser.password"
+              type="password"
+              :class="$style.input"
+              required
+              placeholder="パスワードを入力"
+              minlength="6"
+            />
           </div>
 
           <div :class="$style.formGroup">
@@ -216,7 +244,11 @@ onMounted(() => {
             <button type="button" @click="closeModal" :class="[$style.actionBtn, $style.cancelBtn]">
               キャンセル
             </button>
-            <button type="submit" :class="[$style.actionBtn, $style.createBtn]" :disabled="isCreating">
+            <button
+              type="submit"
+              :class="[$style.actionBtn, $style.createBtn]"
+              :disabled="isCreating"
+            >
               {{ isCreating ? '作成中...' : 'ユーザーを作成' }}
             </button>
           </div>

@@ -1,17 +1,22 @@
 <script setup lang="ts">
 interface Props {
-  disabled?: boolean;
-  label?: string;
+  disabled?: boolean
+  label?: string
 }
 
-defineProps<Props>();
+defineProps<Props>()
 defineEmits<{
-  click: [];
-}>();
+  click: []
+}>()
 </script>
 
 <template>
-  <button :class="$style.addButton" @click="$emit('click')" :disabled="disabled" :aria-label="label">
+  <button
+    :class="$style.addButton"
+    @click="$emit('click')"
+    :disabled="disabled"
+    :aria-label="label"
+  >
     <span :class="$style.icon">+</span>
   </button>
 </template>

@@ -1,53 +1,53 @@
 <script setup lang="ts">
-import axios from "axios";
-import { computed, ref } from "vue";
-import { getErrorMessage } from "../../types/error";
+import axios from 'axios'
+import { computed, ref } from 'vue'
+import { getErrorMessage } from '../../types/error'
 
 const emit = defineEmits<{
-  success: [];
-}>();
+  success: []
+}>()
 
 const formData = ref({
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-});
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
-const showCurrentPassword = ref(false);
-const showNewPassword = ref(false);
-const showConfirmPassword = ref(false);
-const loading = ref(false);
-const error = ref("");
-const success = ref(false);
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+const loading = ref(false)
+const error = ref('')
+const success = ref(false)
 
 const passwordMismatch = computed(() => {
   return (
-    formData.value.confirmPassword !== "" &&
+    formData.value.confirmPassword !== '' &&
     formData.value.newPassword !== formData.value.confirmPassword
-  );
-});
+  )
+})
 
 const isFormValid = computed(() => {
   return (
-    formData.value.currentPassword !== "" &&
-    formData.value.newPassword !== "" &&
-    formData.value.confirmPassword !== "" &&
+    formData.value.currentPassword !== '' &&
+    formData.value.newPassword !== '' &&
+    formData.value.confirmPassword !== '' &&
     formData.value.newPassword === formData.value.confirmPassword &&
     formData.value.newPassword.length >= 6
-  );
-});
+  )
+})
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return;
+  if (!isFormValid.value) return
 
-  loading.value = true;
-  error.value = "";
-  success.value = false;
+  loading.value = true
+  error.value = ''
+  success.value = false
 
   try {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem('accessToken')
     await axios.put(
-      "https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/password",
+      'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/password',
       {
         currentPassword: formData.value.currentPassword,
         newPassword: formData.value.newPassword,
@@ -57,26 +57,26 @@ const handleSubmit = async () => {
           Authorization: `Bearer ${token}`,
         },
       },
-    );
+    )
 
-    success.value = true;
+    success.value = true
     formData.value = {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    };
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    }
 
-    emit("success");
+    emit('success')
 
     setTimeout(() => {
-      success.value = false;
-    }, 5000);
+      success.value = false
+    }, 5000)
   } catch (err: unknown) {
-    error.value = getErrorMessage(err);
+    error.value = getErrorMessage(err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>
 
 <template>
@@ -86,17 +86,24 @@ const handleSubmit = async () => {
         {{ error }}
       </div>
 
-      <div v-if="success" :class="$style.success">
-        パスワードが正常に変更されました
-      </div>
+      <div v-if="success" :class="$style.success">パスワードが正常に変更されました</div>
 
       <div :class="$style.field">
         <label for="currentPassword" :class="$style.label">現在のパスワード *</label>
         <div :class="$style.passwordGroup">
-          <input id="currentPassword" v-model="formData.currentPassword"
-            :type="showCurrentPassword ? 'text' : 'password'" required :class="$style.input"
-            placeholder="現在のパスワードを入力" />
-          <button type="button" :class="$style.toggle" @click="showCurrentPassword = !showCurrentPassword">
+          <input
+            id="currentPassword"
+            v-model="formData.currentPassword"
+            :type="showCurrentPassword ? 'text' : 'password'"
+            required
+            :class="$style.input"
+            placeholder="現在のパスワードを入力"
+          />
+          <button
+            type="button"
+            :class="$style.toggle"
+            @click="showCurrentPassword = !showCurrentPassword"
+          >
             {{ showCurrentPassword ? '🐈' : '🐈‍⬛' }}
           </button>
         </div>
@@ -105,8 +112,15 @@ const handleSubmit = async () => {
       <div :class="$style.field">
         <label for="newPassword" :class="$style.label">新しいパスワード *</label>
         <div :class="$style.passwordGroup">
-          <input id="newPassword" v-model="formData.newPassword" :type="showNewPassword ? 'text' : 'password'" required
-            :class="$style.input" placeholder="新しいパスワードを入力" minlength="6" />
+          <input
+            id="newPassword"
+            v-model="formData.newPassword"
+            :type="showNewPassword ? 'text' : 'password'"
+            required
+            :class="$style.input"
+            placeholder="新しいパスワードを入力"
+            minlength="6"
+          />
           <button type="button" :class="$style.toggle" @click="showNewPassword = !showNewPassword">
             {{ showNewPassword ? '🐈' : '🐈‍⬛' }}
           </button>
@@ -116,17 +130,24 @@ const handleSubmit = async () => {
       <div :class="$style.field">
         <label for="confirmPassword" :class="$style.label">新しいパスワード（確認） *</label>
         <div :class="$style.passwordGroup">
-          <input id="confirmPassword" v-model="formData.confirmPassword"
-            :type="showConfirmPassword ? 'text' : 'password'" required
-            :class="[$style.input, { [$style.inputError]: passwordMismatch }]" placeholder="新しいパスワードを再入力"
-            minlength="6" />
-          <button type="button" :class="$style.toggle" @click="showConfirmPassword = !showConfirmPassword">
+          <input
+            id="confirmPassword"
+            v-model="formData.confirmPassword"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            required
+            :class="[$style.input, { [$style.inputError]: passwordMismatch }]"
+            placeholder="新しいパスワードを再入力"
+            minlength="6"
+          />
+          <button
+            type="button"
+            :class="$style.toggle"
+            @click="showConfirmPassword = !showConfirmPassword"
+          >
             {{ showConfirmPassword ? '🐈' : '🐈‍⬛' }}
           </button>
         </div>
-        <div v-if="passwordMismatch" :class="$style.fieldError">
-          パスワードが一致しません
-        </div>
+        <div v-if="passwordMismatch" :class="$style.fieldError">パスワードが一致しません</div>
       </div>
 
       <div :class="$style.actions">
