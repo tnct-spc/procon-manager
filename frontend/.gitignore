@@ -31,3 +31,4 @@ coverage
 
 # for mame
 frontend/CLAUDE.md
+.env

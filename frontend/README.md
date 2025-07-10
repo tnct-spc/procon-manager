@@ -1,3 +1,9 @@
+frontend配下に '.env' ファイルを作成し、以下の形式でバックエンド側のbase URLを書き込んでください。
+
+VITE_API_BASE_URL={URL}
+
+↑波括弧は外してね！
+
 # frontend
 
 This template should help get you started developing with Vue 3 in Vite.
