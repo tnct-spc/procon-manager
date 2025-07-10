@@ -8,7 +8,7 @@ use api::{
     },
     route::{auth, v1},
 };
-use axum::http::Method;
+use axum::http::{HeaderName, Method};
 use tower_http::{
     LatencyUnit,
     cors::{self, CorsLayer},
@@ -51,7 +51,11 @@ fn init_logger() -> anyhow::Result<()> {
 
 fn cors() -> CorsLayer {
     CorsLayer::new()
-        .allow_headers(cors::Any)
+        .allow_headers(vec![
+            HeaderName::from_static("authorization"),
+            HeaderName::from_static("content-type"),
+            HeaderName::from_static("accept"),
+        ])
         .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_origin(cors::Any)
 }

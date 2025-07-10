@@ -91,6 +91,7 @@
               cargo-nextest
               sqlx-cli
               process-compose
+              nodePackages.serve
             ];
 
             shellHook = ''
