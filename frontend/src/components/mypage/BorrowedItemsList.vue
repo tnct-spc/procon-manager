@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import axios from 'axios'
 import { onMounted, ref } from 'vue'
 import { useAppStore } from '../../stores/counter'
 import type { Item } from '../../types/api'
 import { getErrorMessage } from '../../types/error'
+import api from '../../services/api'
 
 const store = useAppStore()
 const borrowedItems = ref<Item[]>([])
@@ -16,15 +16,7 @@ const fetchBorrowedItems = async () => {
   error.value = ''
 
   try {
-    const token = localStorage.getItem('accessToken')
-    const response = await axios.get(
-      'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/checkouts',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    )
+    const response = await api.get('/users/me/checkouts')
 
     // APIから返されるCheckoutのデータから、itemIdを使って詳細なアイテム情報を取得
     const checkouts = response.data.items
@@ -32,14 +24,7 @@ const fetchBorrowedItems = async () => {
     // 各チェックアウトのアイテム詳細を取得
     const itemPromises = checkouts.map(
       async (checkout: { id: string; itemId: string; checkedOutAt: string }) => {
-        const itemResponse = await axios.get(
-          `https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/items/${checkout.itemId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        )
+        const itemResponse = await api.get(`/items/${checkout.itemId}`)
 
         // アイテムにチェックアウト情報を追加
         return {

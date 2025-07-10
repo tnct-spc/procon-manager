@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { LoginResponse } from '../../types/api'
 import { getErrorMessage } from '../../types/error'
+import { authApi } from '../../services/api'
 
 const email = ref('')
 const password = ref('')
@@ -17,10 +18,10 @@ const login = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    const res = await axios.post<LoginResponse>(
-      'https://procon-manager-item-manager-zcuq.shuttle.app/auth/login',
-      { email: email.value, password: password.value },
-    )
+    const res = await authApi.post<LoginResponse>('/auth/login', {
+      email: email.value,
+      password: password.value,
+    })
     const { accessToken, userId } = res.data
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('userId', userId)

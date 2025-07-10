@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import axios from 'axios'
 import { computed, ref } from 'vue'
 import { getErrorMessage } from '../../types/error'
+import api from '../../services/api'
 
 const emit = defineEmits<{
   success: []
@@ -45,19 +45,10 @@ const handleSubmit = async () => {
   success.value = false
 
   try {
-    const token = localStorage.getItem('accessToken')
-    await axios.put(
-      'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1/users/me/password',
-      {
-        currentPassword: formData.value.currentPassword,
-        newPassword: formData.value.newPassword,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    )
+    await api.put('/users/me/password', {
+      currentPassword: formData.value.currentPassword,
+      newPassword: formData.value.newPassword,
+    })
 
     success.value = true
     formData.value = {

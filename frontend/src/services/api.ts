@@ -1,7 +1,20 @@
 import axios from 'axios'
 
+const getBaseURL = () => {
+  const baseURL = import.meta.env.VITE_API_BASE_URL
+  if (!baseURL) {
+    throw new Error('VITE_API_BASE_URL is not defined in environment variables')
+  }
+  return baseURL
+}
+
 const api = axios.create({
-  baseURL: 'https://procon-manager-item-manager-zcuq.shuttle.app/api/v1',
+  baseURL: `${getBaseURL()}/api/v1`,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+const authApi = axios.create({
+  baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -14,3 +27,4 @@ api.interceptors.request.use((config) => {
 })
 
 export default api
+export { getBaseURL, authApi }
