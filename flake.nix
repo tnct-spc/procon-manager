@@ -35,6 +35,7 @@
         {
           config,
           pkgs,
+          lib,
           system,
           ...
         }:
@@ -173,10 +174,13 @@
             settings = {
               processes = {
                 backend-server = {
-                  command = pkgs.lib.getExe config.packages.item-manager;
+                  command = lib.getExe config.packages.item-manager;
                   depends_on = {
                     "pg1".condition = "process_healthy";
                   };
+                };
+                frontend-server = {
+                  command = "${pkgs.nodePackages.serve}/bin/serve -s frontend/dist -l 5173";
                 };
               };
             };
