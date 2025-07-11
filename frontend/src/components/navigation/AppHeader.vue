@@ -49,36 +49,41 @@ const handleLogout = () => {
 
 <style module>
 .navbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  height: 100px;
+  min-height: clamp(60px, 10vh, 100px);
   width: 100%;
   background: var(--color-accent);
   color: var(--color-background);
-  padding: 0 24px;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 30%, transparent);
+  gap: clamp(1rem, 2vw, 2rem);
 }
 
 .brand h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: clamp(1.125rem, 4vw, 1.5rem);
   font-weight: 600;
   color: var(--color-background);
 }
 
 .nav {
   display: flex;
-  gap: 24px;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .navLink {
   color: color-mix(in srgb, var(--color-background) 90%, transparent);
   text-decoration: none;
-  padding: 8px 16px;
+  padding: clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 2vw, 1rem);
   border-radius: 4px;
   transition: all 0.2s;
   font-weight: 500;
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  white-space: nowrap;
 }
 
 .navLink:hover {
@@ -94,16 +99,20 @@ const handleLogout = () => {
 .userSection {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  justify-self: end;
 }
 
 .userInfo {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  font-size: 14px;
+  align-items: center;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: color-mix(in srgb, var(--color-background) 90%, transparent);
   line-height: 1.2;
+  text-align: center;
 }
 
 .userName {
@@ -111,7 +120,7 @@ const handleLogout = () => {
 }
 
 .role {
-  font-size: 12px;
+  font-size: clamp(0.625rem, 1.5vw, 0.75rem);
   opacity: 0.8;
 }
 
@@ -119,15 +128,32 @@ const handleLogout = () => {
   background: color-mix(in srgb, var(--color-background) 10%, transparent);
   color: var(--color-background);
   border: 1px solid color-mix(in srgb, var(--color-background) 30%, transparent);
-  padding: 8px 16px;
+  padding: clamp(0.375rem, 1vw, 0.5rem) clamp(0.75rem, 2vw, 1rem);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .logoutBtn:hover {
   background: color-mix(in srgb, var(--color-background) 20%, transparent);
   border-color: color-mix(in srgb, var(--color-background) 50%, transparent);
+}
+
+@media (max-width: 50rem) {
+  .navbar {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .brand {
+    justify-self: start;
+  }
+
+  .userSection {
+    justify-self: end;
+    align-items: flex-end;
+  }
 }
 </style>

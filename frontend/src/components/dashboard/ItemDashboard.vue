@@ -120,10 +120,10 @@ const deleteItem = async (itemId: string) => {
         :key="item.id"
         :class="[$style.itemCard, { [$style.checkedOut]: item.checkout }]"
       >
+        <span :class="$style.itemType">{{ getItemTypeLabel(item) }}</span>
         <div :class="$style.itemInfo">
           <div :class="$style.itemHeader">
             <h3 :class="$style.itemName">{{ item.name }}</h3>
-            <span :class="$style.itemType">{{ getItemTypeLabel(item) }}</span>
           </div>
 
           <p :class="$style.description">{{ item.description }}</p>
@@ -245,8 +245,9 @@ const deleteItem = async (itemId: string) => {
 
 <style module>
 .container {
-  padding: 20px;
-  width: 80%;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  width: clamp(90%, 80vw, 80%);
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -254,10 +255,12 @@ const deleteItem = async (itemId: string) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 50px;
-  margin-bottom: 20px;
+  margin-top: clamp(2rem, 5vh, 3rem);
+  margin-bottom: clamp(1rem, 3vh, 1.5rem);
   border-bottom: 2px solid var(--color-accent);
-  padding-bottom: 15px;
+  padding-bottom: clamp(0.75rem, 2vh, 1rem);
+  flex-wrap: wrap;
+  gap: clamp(0.5rem, 2vw, 1rem);
 }
 
 .headerActions {
@@ -307,16 +310,17 @@ const deleteItem = async (itemId: string) => {
 }
 
 .itemCard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 32px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: clamp(1rem, 3vw, 2rem);
+  padding: clamp(1.5rem, 4vw, 2rem);
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
   border-radius: 12px;
   background: var(--color-background);
   box-shadow: 0 4px 8px color-mix(in srgb, var(--color-accent) 20%, transparent);
   transition: all 0.2s;
-  min-height: 120px;
+  min-height: clamp(100px, 15vh, 120px);
+  position: relative;
 }
 
 .itemCard:hover {
@@ -330,45 +334,47 @@ const deleteItem = async (itemId: string) => {
 }
 
 .itemInfo {
-  flex: 1;
-  margin-right: 32px;
+  justify-self: start;
+  min-width: clamp(250px, 60%, 400px);
 }
 
 .itemHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
 }
 
 .itemName {
   margin: 0;
-  font-size: 22px;
+  font-size: clamp(1.125rem, 3vw, 1.375rem);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .itemType {
+  position: absolute;
+  top: clamp(0.75rem, 2vw, 1rem);
+  right: clamp(0.75rem, 2vw, 1rem);
   background: color-mix(in srgb, var(--color-accent) 15%, var(--color-background));
   color: var(--color-accent);
-  padding: 4px 8px;
+  padding: clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);
   border-radius: 12px;
-  font-size: 12px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 500;
+  white-space: nowrap;
+  z-index: 10;
 }
 
 .description {
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
-  margin: 8px 0;
+  margin: clamp(0.5rem, 2vw, 0.75rem) 0;
   line-height: 1.5;
-  font-size: 16px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
 .details {
-  font-size: 16px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   color: var(--color-text);
-  margin: 8px 0;
-  padding: 8px 12px;
+  margin: clamp(0.5rem, 2vw, 0.75rem) 0;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 2vw, 1rem);
   background: color-mix(in srgb, var(--color-accent) 8%, var(--color-background));
   border-radius: 6px;
   border-left: 3px solid var(--color-accent);
@@ -404,23 +410,29 @@ const deleteItem = async (itemId: string) => {
 .itemActions {
   display: flex;
   align-items: center;
-  gap: 16px;
-  min-width: 200px;
+  gap: clamp(0.75rem, 2vw, 1rem);
+  min-width: clamp(150px, 25vw, 200px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  justify-self: end;
 }
 
 .primaryActions {
   display: flex;
-  gap: 8px;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  flex-wrap: wrap;
 }
 
 .checkoutBtn,
 .returnBtn {
-  padding: 8px 16px;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1rem);
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: clamp(80px, 20vw, 120px);
 }
 
 .checkoutBtn {
@@ -458,21 +470,24 @@ const deleteItem = async (itemId: string) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-top: 32px;
-  padding: 20px;
+  gap: clamp(0.75rem, 3vw, 1rem);
+  margin-top: clamp(1.5rem, 4vh, 2rem);
+  padding: clamp(1rem, 3vh, 1.5rem);
+  flex-wrap: wrap;
 }
 
 .paginationBtn {
-  padding: 10px 20px;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1.25rem);
   border: 1px solid var(--color-accent);
   background: var(--color-background);
   color: var(--color-accent);
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 500;
   transition: all 0.2s;
+  white-space: nowrap;
+  min-width: clamp(60px, 15vw, 80px);
 }
 
 .paginationBtn:hover:not(:disabled) {
@@ -610,5 +625,40 @@ const deleteItem = async (itemId: string) => {
 
 .modalContent {
   padding: 24px;
+}
+
+@media (max-width: 40rem) {
+  .itemCard {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .itemInfo {
+    justify-self: stretch;
+  }
+
+  .itemActions {
+    justify-self: stretch;
+    justify-content: flex-end;
+  }
+
+  .primaryActions {
+    display: flex;
+    gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  }
+
+  .checkoutBtn,
+  .returnBtn {
+    min-width: clamp(80px, 20vw, 120px);
+  }
+
+  .pagination {
+    flex-direction: column;
+  }
+
+  .paginationBtn {
+    width: 100%;
+    max-width: 200px;
+  }
 }
 </style>

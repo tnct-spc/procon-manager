@@ -260,34 +260,34 @@ onMounted(() => {
 
 <style module>
 .adminContainer {
-  max-width: 1200px;
+  max-width: clamp(600px, 90vw, 1200px);
   width: 100%;
-  padding: 24px;
+  padding: clamp(1rem, 4vw, 2rem);
   margin: 0 auto;
 }
 
 .title {
-  font-size: 32px;
+  font-size: clamp(1.5rem, 5vw, 2rem);
   font-weight: 600;
   color: #2c3e50;
-  margin-bottom: 32px;
+  margin-bottom: clamp(1.5rem, 4vw, 2rem);
   text-align: center;
 }
 
 .section {
   background: white;
-  border-radius: 8px;
-  padding: 24px;
+  border-radius: clamp(0.5rem, 2vw, 1rem);
+  padding: clamp(1rem, 4vw, 2rem);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sectionTitle {
-  font-size: 24px;
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
   font-weight: 600;
   color: #34495e;
-  margin-bottom: 24px;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
   border-bottom: 2px solid #3498db;
-  padding-bottom: 8px;
+  padding-bottom: clamp(0.5rem, 2vw, 0.75rem);
 }
 
 .loading {
@@ -315,11 +315,13 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: clamp(1rem, 3vw, 1.5rem);
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: clamp(0.5rem, 2vw, 1rem);
   background: #f8f9fa;
   transition: all 0.2s;
+  flex-wrap: wrap;
+  gap: clamp(0.75rem, 2vw, 1rem);
 }
 
 .userCard:hover {
@@ -330,36 +332,38 @@ onMounted(() => {
 
 .userInfo {
   flex: 1;
+  min-width: clamp(200px, 40vw, 300px);
 }
 
 .userName {
-  font-size: 18px;
+  font-size: clamp(1rem, 3vw, 1.125rem);
   font-weight: 600;
   color: #2c3e50;
-  margin-bottom: 4px;
+  margin-bottom: clamp(0.25rem, 1vw, 0.5rem);
 }
 
 .userEmail {
   color: #7f8c8d;
-  font-size: 14px;
-  margin-bottom: 8px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  margin-bottom: clamp(0.5rem, 1vw, 0.75rem);
 }
 
 .userRole {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(0.5rem, 1vw, 0.75rem);
+  flex-wrap: wrap;
 }
 
 .roleLabel {
-  font-size: 14px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: #7f8c8d;
 }
 
 .roleBadge {
-  padding: 4px 8px;
+  padding: clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: clamp(0.625rem, 1.5vw, 0.75rem);
   font-weight: 600;
 }
 
@@ -375,18 +379,21 @@ onMounted(() => {
 
 .userActions {
   display: flex;
-  gap: 8px;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .actionBtn {
-  padding: 8px 16px;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 2.5vw, 1rem);
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 500;
   transition: all 0.2s;
+  white-space: nowrap;
+  min-width: clamp(80px, 20vw, 120px);
 }
 
 .actionBtn:disabled {
@@ -425,7 +432,9 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+  flex-wrap: wrap;
+  gap: clamp(0.75rem, 2vw, 1rem);
 }
 
 .sectionTitle {
@@ -433,13 +442,13 @@ onMounted(() => {
 }
 
 .addUserBtn {
-  width: 48px;
-  height: 48px;
+  width: clamp(40px, 8vw, 48px);
+  height: clamp(40px, 8vw, 48px);
   border-radius: 50%;
   background: #3498db;
   color: white;
   border: none;
-  font-size: 24px;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -470,9 +479,9 @@ onMounted(() => {
 
 .modal {
   background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+  border-radius: clamp(0.5rem, 2vw, 1rem);
+  width: clamp(90%, 90vw, 500px);
+  max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -482,12 +491,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: clamp(1rem, 3vw, 1.5rem);
   border-bottom: 1px solid #e2e8f0;
 }
 
 .modalTitle {
-  font-size: 20px;
+  font-size: clamp(1.125rem, 3vw, 1.25rem);
   font-weight: 600;
   color: #2c3e50;
   margin: 0;
@@ -496,12 +505,12 @@ onMounted(() => {
 .closeBtn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
   color: #7f8c8d;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: clamp(24px, 6vw, 32px);
+  height: clamp(24px, 6vw, 32px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -515,28 +524,28 @@ onMounted(() => {
 }
 
 .addUserForm {
-  padding: 24px;
+  padding: clamp(1rem, 3vw, 1.5rem);
 }
 
 .formGroup {
-  margin-bottom: 20px;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
 }
 
 .label {
   display: block;
   font-weight: 500;
   color: #34495e;
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
 .input,
 .select {
   width: 100%;
-  padding: 12px;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   transition: border-color 0.2s;
   box-sizing: border-box;
 }
@@ -550,9 +559,10 @@ onMounted(() => {
 
 .modalActions {
   display: flex;
-  gap: 12px;
+  gap: clamp(0.5rem, 2vw, 0.75rem);
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: clamp(1rem, 3vw, 1.5rem);
+  flex-wrap: wrap;
 }
 
 .cancelBtn {
@@ -571,5 +581,44 @@ onMounted(() => {
 
 .createBtn:hover:not(:disabled) {
   background: #229954;
+}
+
+@container (max-width: 40rem) {
+  .userCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .userActions {
+    justify-content: stretch;
+  }
+
+  .actionBtn {
+    flex: 1;
+    min-width: auto;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .addUserBtn {
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+
+  .modalActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cancelBtn,
+  .createBtn {
+    width: 100%;
+    min-width: auto;
+  }
 }
 </style>
