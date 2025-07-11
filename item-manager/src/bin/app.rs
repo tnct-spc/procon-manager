@@ -88,7 +88,7 @@ async fn bootstrap() -> anyhow::Result<()> {
         )
         .with_state(registry);
 
-    let addr = std::net::SocketAddr::new(std::net::Ipv4Addr::LOCALHOST.into(), 8081);
+    let addr = std::net::SocketAddr::new(std::net::Ipv4Addr::UNSPECIFIED.into(), 8081);
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
     tracing::info!("Listening on {addr}");
