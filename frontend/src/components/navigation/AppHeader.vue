@@ -49,16 +49,15 @@ const handleLogout = () => {
 
 <style module>
 .navbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
   min-height: clamp(60px, 10vh, 100px);
   width: 100%;
   background: var(--color-accent);
   color: var(--color-background);
   padding: clamp(0.75rem, 3vw, 1.5rem);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 30%, transparent);
-  flex-wrap: wrap;
   gap: clamp(1rem, 2vw, 2rem);
 }
 
@@ -102,7 +101,8 @@ const handleLogout = () => {
   align-items: center;
   gap: clamp(0.75rem, 2vw, 1.5rem);
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-end;
+  justify-self: end;
 }
 
 .userInfo {
@@ -141,17 +141,19 @@ const handleLogout = () => {
   border-color: color-mix(in srgb, var(--color-background) 50%, transparent);
 }
 
-@container (max-width: 50rem) {
+@media (max-width: 50rem) {
   .navbar {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .brand {
+    justify-self: start;
   }
 
   .userSection {
-    flex-direction: column;
-    width: 100%;
-    align-items: center;
+    justify-self: end;
+    align-items: flex-end;
   }
 }
 </style>
