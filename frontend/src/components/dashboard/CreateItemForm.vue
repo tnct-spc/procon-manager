@@ -170,9 +170,9 @@ const handleCancel = () => {
 
 .modal {
   background: var(--color-background);
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+  border-radius: clamp(0.5rem, 2vw, 1rem);
+  width: clamp(90%, 90vw, 500px);
+  max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px color-mix(in srgb, var(--color-accent) 30%, transparent);
@@ -183,24 +183,25 @@ const handleCancel = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
+  padding: clamp(1rem, 3vw, 1.5rem);
   border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 
 .header h2 {
   margin: 0;
   color: var(--color-text);
+  font-size: clamp(1.125rem, 3vw, 1.25rem);
 }
 
 .closeBtn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
   cursor: pointer;
   color: color-mix(in srgb, var(--color-text) 60%, transparent);
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: clamp(24px, 6vw, 30px);
+  height: clamp(24px, 6vw, 30px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -214,28 +215,29 @@ const handleCancel = () => {
 }
 
 .form {
-  padding: 20px;
+  padding: clamp(1rem, 3vw, 1.5rem);
 }
 
 .field {
-  margin-bottom: 16px;
+  margin-bottom: clamp(0.75rem, 2vw, 1rem);
 }
 
 .field label {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: clamp(0.25rem, 1vw, 0.5rem);
   font-weight: 500;
   color: var(--color-text);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  padding: 8px 12px;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
   border-radius: 4px;
-  font-size: 14px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   box-sizing: border-box;
   background: var(--color-background);
   color: var(--color-text);
@@ -272,22 +274,25 @@ const handleCancel = () => {
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: clamp(0.5rem, 2vw, 0.75rem);
   justify-content: flex-end;
-  margin-top: 20px;
-  padding-top: 16px;
+  margin-top: clamp(1rem, 3vw, 1.5rem);
+  padding-top: clamp(0.75rem, 2vw, 1rem);
   border-top: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  flex-wrap: wrap;
 }
 
 .cancelBtn,
 .submitBtn {
-  padding: 10px 20px;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1.25rem);
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   font-weight: 500;
   transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: clamp(80px, 20vw, 100px);
 }
 
 .cancelBtn {
@@ -311,5 +316,18 @@ const handleCancel = () => {
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@container (max-width: 30rem) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cancelBtn,
+  .submitBtn {
+    width: 100%;
+    min-width: auto;
+  }
 }
 </style>

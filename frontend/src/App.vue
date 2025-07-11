@@ -15,7 +15,7 @@ import AppHeader from './components/navigation/AppHeader.vue'
 .tab {
   top: 0;
   width: 100%;
-  height: 100px;
+  min-height: clamp(60px, 10vh, 100px);
   place-items: center;
 }
 
@@ -26,7 +26,7 @@ import AppHeader from './components/navigation/AppHeader.vue'
   justify-content: flex-start;
   align-items: center;
   overflow-y: auto;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - clamp(60px, 10vh, 100px));
   width: 100%;
 }
 </style>

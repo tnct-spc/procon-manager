@@ -73,8 +73,8 @@ const login = async () => {
 
 <style scoped>
 .container {
-  width: 80%;
-  max-width: 400px;
+  width: clamp(90%, 80vw, 400px);
+  max-width: 90vw;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,56 +82,57 @@ const login = async () => {
 
 .card {
   background: var(--color-background);
-  padding: 2rem;
-  border-radius: 1rem;
+  padding: clamp(1.5rem, 4vw, 2rem);
+  border-radius: clamp(0.5rem, 2vw, 1rem);
   box-shadow: 0 0 20px color-mix(in srgb, var(--color-accent) 20%, transparent);
   width: 100%;
-  /* max-width: 400px; */
   max-height: 90vh;
   text-align: center;
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
 }
 
 .heading {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
   color: var(--color-text);
 }
 
 .subtext {
-  font-size: 1rem;
+  font-size: clamp(0.875rem, 3vw, 1rem);
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: clamp(0.75rem, 3vw, 1rem);
 }
 
 .alert {
   background: color-mix(in srgb, var(--color-error) 10%, var(--color-background));
   color: var(--color-error);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
+  border-radius: clamp(0.375rem, 1vw, 0.5rem);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
 }
 
 .form-label {
   font-weight: 600;
   text-align: left;
   color: var(--color-text);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
 .input {
   width: 100%;
-  padding: 0.5rem;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
-  border-radius: 0.375rem;
-  font-size: 1rem;
+  border-radius: clamp(0.25rem, 1vw, 0.375rem);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   background: var(--color-background);
   color: var(--color-text);
+  box-sizing: border-box;
 }
 
 .password-group {
@@ -141,21 +142,23 @@ const login = async () => {
 .toggle {
   position: absolute;
   top: 50%;
-  right: 0.75rem;
+  right: clamp(0.5rem, 2vw, 0.75rem);
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+  padding: clamp(0.25rem, 1vw, 0.375rem);
+  border-radius: 4px;
 }
 
 .submit-button {
-  padding: 0.75rem;
-  font-size: 1rem;
+  padding: clamp(0.75rem, 3vw, 1rem);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   background-color: var(--color-accent);
   color: var(--color-background);
   border: none;
-  border-radius: 0.375rem;
+  border-radius: clamp(0.25rem, 1vw, 0.375rem);
   cursor: pointer;
   transition: background 0.2s ease-in-out;
 }

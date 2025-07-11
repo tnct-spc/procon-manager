@@ -152,41 +152,42 @@ const handleSubmit = async () => {
 
 <style module>
 .container {
-  max-width: 500px;
+  max-width: clamp(400px, 80vw, 500px);
+  width: 100%;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(1rem, 3vw, 1.5rem);
 }
 
 .error {
   background: color-mix(in srgb, var(--color-error) 10%, var(--color-background));
   color: var(--color-error);
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
+  border-radius: clamp(0.375rem, 1vw, 0.5rem);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
 }
 
 .success {
   background: color-mix(in srgb, var(--color-success) 10%, var(--color-background));
   color: var(--color-success);
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
+  border-radius: clamp(0.375rem, 1vw, 0.5rem);
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 
 .label {
   font-weight: 500;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
 .passwordGroup {
@@ -195,10 +196,10 @@ const handleSubmit = async () => {
 
 .input {
   width: 100%;
-  padding: 12px;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
   border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: clamp(0.375rem, 1vw, 0.5rem);
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   background: var(--color-background);
   color: var(--color-text);
   transition: border-color 0.2s;
@@ -223,13 +224,13 @@ const handleSubmit = async () => {
 .toggle {
   position: absolute;
   top: 50%;
-  right: 12px;
+  right: clamp(0.5rem, 2vw, 0.75rem);
   transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
-  padding: 4px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+  padding: clamp(0.25rem, 1vw, 0.375rem);
   border-radius: 4px;
   transition: background-color 0.2s;
 }
@@ -240,26 +241,27 @@ const handleSubmit = async () => {
 
 .fieldError {
   color: var(--color-error);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  margin-top: clamp(0.25rem, 1vw, 0.375rem);
 }
 
 .actions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
+  justify-content: center;
+  margin-top: clamp(0.5rem, 2vw, 1rem);
 }
 
 .submitBtn {
-  padding: 12px 24px;
+  padding: clamp(0.5rem, 2vw, 0.75rem) clamp(1rem, 3vw, 1.5rem);
   border: none;
-  border-radius: 6px;
+  border-radius: clamp(0.375rem, 1vw, 0.5rem);
   cursor: pointer;
-  font-size: 14px;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
   font-weight: 500;
   background: var(--color-accent);
   color: var(--color-background);
   transition: all 0.2s;
+  min-width: clamp(120px, 30vw, 180px);
 }
 
 .submitBtn:hover:not(:disabled) {
