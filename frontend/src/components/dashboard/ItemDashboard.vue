@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, onBeforeUnmount } from 'vue'
 import { useAppStore } from '../../stores/counter'
 import type { Item } from '../../types/api'
 import type { ApiError } from '../../types/error'
@@ -9,11 +9,6 @@ import EditItemForm from './EditItemForm.vue'
 
 const store = useAppStore()
 const showCreateForm = ref(false)
-
-onMounted(async () => {
-  await store.fetchItems()
-  await store.getCurrentUser()
-})
 
 const handleCheckout = async (item: Item) => {
   try {
@@ -76,9 +71,9 @@ const editingItem = ref<Item | null>(null)
 const showMenu = ref<{ [key: string]: boolean }>({})
 
 const toggleMenu = (itemId: string) => {
+  const isCurrentlyOpen = showMenu.value[itemId]
   showMenu.value = {
-    ...showMenu.value,
-    [itemId]: !showMenu.value[itemId],
+    [itemId]: !isCurrentlyOpen,
   }
 }
 
@@ -100,6 +95,27 @@ const deleteItem = async (itemId: string) => {
   }
   showMenu.value = {}
 }
+
+const closeAllMenus = () => {
+  showMenu.value = {}
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as Element
+  if (!target.closest('[data-menu-container]')) {
+    closeAllMenus()
+  }
+}
+
+onMounted(async () => {
+  await store.fetchItems()
+  await store.getCurrentUser()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
@@ -166,7 +182,7 @@ const deleteItem = async (itemId: string) => {
             </button>
           </div>
 
-          <div :class="$style.menuContainer">
+          <div :class="$style.menuContainer" data-menu-container>
             <button
               @click="toggleMenu(item.id)"
               :class="$style.menuBtn"
