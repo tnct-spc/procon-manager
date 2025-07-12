@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import axios from 'axios'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { LoginResponse } from '../../types/api'
 import { getErrorMessage } from '../../types/error'
-import { authApi } from '../../services/api'
+import client from '../../services/api'
 
 const email = ref('')
 const password = ref('')
@@ -18,14 +16,24 @@ const login = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    const res = await authApi.post<LoginResponse>('/auth/login', {
-      email: email.value,
-      password: password.value,
+    const { data, error } = await client.POST('/auth/login', {
+      body: {
+        email: email.value,
+        password: password.value,
+      },
     })
-    const { accessToken, userId } = res.data
+
+    if (error) {
+      throw new Error('Invalid credentials')
+    }
+
+    if (!data) {
+      throw new Error('No response data')
+    }
+
+    const { accessToken, userId } = data
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('userId', userId)
-    axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`
     router.push('/dashboard')
   } catch (err: unknown) {
     errorMessage.value = getErrorMessage(err)

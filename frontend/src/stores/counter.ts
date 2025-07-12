@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import api from '../services/api'
-import type { CreateItemRequest, Item, PaginatedItemResponse, User } from '../types/api'
+import client from '../services/api'
+import type { User, Item, CreateItemRequest } from '../types/api'
 import { getErrorMessage } from '../types/error'
 
 export const useAppStore = defineStore('app', () => {
@@ -20,11 +20,21 @@ export const useAppStore = defineStore('app', () => {
     error.value = null
     try {
       const offset = (page - 1) * itemsPerPage.value
-      const response = await api.get<PaginatedItemResponse>('/items', {
-        params: { limit: itemsPerPage.value, offset },
+      const { data, error } = await client.GET('/api/v1/items', {
+        params: {
+          query: {
+            limit: itemsPerPage.value,
+            offset,
+          },
+        },
       })
-      items.value = response.data.items
-      totalItems.value = response.data.total
+
+      if (error || !data) {
+        throw new Error('Failed to fetch items')
+      }
+
+      items.value = data.items
+      totalItems.value = data.total
       currentPage.value = page
       console.log('Fetched items:', items.value)
     } catch (err: unknown) {
@@ -40,7 +50,14 @@ export const useAppStore = defineStore('app', () => {
     error.value = null
     try {
       console.log('Creating item with data:', itemData)
-      await api.post('/items', itemData)
+      const { error } = await client.POST('/api/v1/items', {
+        body: itemData,
+      })
+
+      if (error) {
+        throw new Error('Failed to create item')
+      }
+
       await fetchItems(currentPage.value)
     } catch (err: unknown) {
       console.error('Create item error:', err)
@@ -55,7 +72,16 @@ export const useAppStore = defineStore('app', () => {
     loading.value = true
     error.value = null
     try {
-      await api.post(`/items/${itemId}/checkouts`)
+      const { error } = await client.POST('/api/v1/items/{item_id}/checkouts', {
+        params: {
+          path: { item_id: itemId },
+        },
+      })
+
+      if (error) {
+        throw new Error('Failed to checkout item')
+      }
+
       await fetchItems(currentPage.value)
     } catch (err: unknown) {
       error.value = getErrorMessage(err)
@@ -70,7 +96,22 @@ export const useAppStore = defineStore('app', () => {
     loading.value = true
     error.value = null
     try {
-      await api.put(`/items/${itemId}/checkouts/${checkoutId}/returned`)
+      const { error } = await client.PUT(
+        '/api/v1/items/{item_id}/checkouts/{checkout_id}/returned',
+        {
+          params: {
+            path: {
+              item_id: itemId,
+              checkout_id: checkoutId,
+            },
+          },
+        },
+      )
+
+      if (error) {
+        throw new Error('Failed to return item')
+      }
+
       await fetchItems(currentPage.value)
     } catch (err: unknown) {
       error.value = getErrorMessage(err)
@@ -84,7 +125,17 @@ export const useAppStore = defineStore('app', () => {
     loading.value = true
     error.value = null
     try {
-      await api.put(`/items/${itemId}`, itemData)
+      const { error } = await client.PUT('/api/v1/items/{item_id}', {
+        params: {
+          path: { item_id: itemId },
+        },
+        body: itemData,
+      })
+
+      if (error) {
+        throw new Error('Failed to update item')
+      }
+
       await fetchItems(currentPage.value)
     } catch (err: unknown) {
       error.value = getErrorMessage(err)
@@ -98,7 +149,16 @@ export const useAppStore = defineStore('app', () => {
     loading.value = true
     error.value = null
     try {
-      await api.delete(`/items/${itemId}`)
+      const { error } = await client.DELETE('/api/v1/items/{item_id}', {
+        params: {
+          path: { item_id: itemId },
+        },
+      })
+
+      if (error) {
+        throw new Error('Failed to delete item')
+      }
+
       await fetchItems(currentPage.value)
     } catch (err: unknown) {
       error.value = getErrorMessage(err)
@@ -110,8 +170,14 @@ export const useAppStore = defineStore('app', () => {
 
   const getCurrentUser = async () => {
     try {
-      const response = await api.get<User>('/users/me')
-      currentUser.value = response.data
+      const { data, error } = await client.GET('/api/v1/users/me')
+
+      if (error || !data) {
+        console.error('ユーザー情報の取得に失敗:', error)
+        return
+      }
+
+      currentUser.value = data
     } catch (err: unknown) {
       console.error('ユーザー情報の取得に失敗:', err)
     }

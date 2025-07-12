@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAppStore } from '../../stores/counter'
-import type { Item } from '../../types/api'
+import type { Item, CheckoutResponse } from '../../types/api'
 import { getErrorMessage } from '../../types/error'
-import api from '../../services/api'
+import client from '../../services/api'
 
 const store = useAppStore()
 const borrowedItems = ref<Item[]>([])
@@ -16,30 +16,39 @@ const fetchBorrowedItems = async () => {
   error.value = ''
 
   try {
-    const response = await api.get('/users/me/checkouts')
+    const { data, error } = await client.GET('/api/v1/users/me/checkouts')
+
+    if (error || !data) {
+      throw new Error('Failed to fetch borrowed items')
+    }
 
     // APIから返されるCheckoutのデータから、itemIdを使って詳細なアイテム情報を取得
-    const checkouts = response.data.items
+    const checkouts = data.items
 
     // 各チェックアウトのアイテム詳細を取得
-    const itemPromises = checkouts.map(
-      async (checkout: { id: string; itemId: string; checkedOutAt: string }) => {
-        const itemResponse = await api.get(`/items/${checkout.itemId}`)
+    const itemPromises = checkouts.map(async (checkout: CheckoutResponse) => {
+      const { data: itemData, error: itemError } = await client.GET('/api/v1/items/{item_id}', {
+        params: { path: { item_id: checkout.itemId } },
+      })
 
-        // アイテムにチェックアウト情報を追加
-        return {
-          ...itemResponse.data,
-          checkout: {
-            id: checkout.id,
-            checkedOutBy: {
-              id: store.currentUser?.id,
-              name: store.currentUser?.name,
-            },
-            checkedOutAt: checkout.checkedOutAt,
+      if (itemError || !itemData) {
+        throw new Error(`Failed to fetch item ${checkout.itemId}`)
+      }
+
+      // アイテムにチェックアウト情報を追加
+      const itemWithCheckout: Item = {
+        ...itemData,
+        checkout: {
+          id: checkout.id,
+          checkedOutBy: {
+            id: store.currentUser?.id || '',
+            name: store.currentUser?.name || '',
           },
-        }
-      },
-    )
+          checkedOutAt: checkout.checkedOutAt,
+        },
+      }
+      return itemWithCheckout
+    })
 
     borrowedItems.value = await Promise.all(itemPromises)
   } catch (err: unknown) {
