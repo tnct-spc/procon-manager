@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { getErrorMessage } from '../../types/error'
-import api from '../../services/api'
+import client from '../../services/api'
 
 const emit = defineEmits<{
   success: []
@@ -45,10 +45,16 @@ const handleSubmit = async () => {
   success.value = false
 
   try {
-    await api.put('/users/me/password', {
-      currentPassword: formData.value.currentPassword,
-      newPassword: formData.value.newPassword,
+    const { error } = await client.PUT('/api/v1/users/me/password', {
+      body: {
+        currentPassword: formData.value.currentPassword,
+        newPassword: formData.value.newPassword,
+      },
     })
+
+    if (error) {
+      throw new Error('Failed to change password')
+    }
 
     success.value = true
     formData.value = {
