@@ -1,4 +1,5 @@
-import axios from 'axios'
+import createClient from 'openapi-fetch'
+import type { paths } from '../types/schema'
 
 const getBaseURL = () => {
   const baseURL = import.meta.env.VITE_API_BASE_URL
@@ -8,23 +9,21 @@ const getBaseURL = () => {
   return baseURL
 }
 
-const api = axios.create({
-  baseURL: `${getBaseURL()}/api/v1`,
-  headers: { 'Content-Type': 'application/json' },
+// Create the main API client with authentication
+const client = createClient<paths>({
+  baseUrl: getBaseURL(),
 })
 
-const authApi = axios.create({
-  baseURL: getBaseURL(),
-  headers: { 'Content-Type': 'application/json' },
+// Add JWT authentication middleware
+client.use({
+  onRequest({ request }) {
+    const token = localStorage.getItem('accessToken')
+    if (token) {
+      request.headers.set('Authorization', `Bearer ${token}`)
+    }
+    return request
+  },
 })
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-export default api
-export { getBaseURL, authApi }
+export default client
+export { getBaseURL }

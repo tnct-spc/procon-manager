@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import api from '../services/api'
+import client from '../services/api'
 import { useAppStore } from '../stores/counter'
-import type { User } from '../types/api'
+import type { User, CreateUserRequest, UpdateUserRoleRequest } from '../types/api'
 import { getErrorMessage } from '../types/error'
 
 const store = useAppStore()
@@ -12,19 +12,23 @@ const isUpdating = ref(false)
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
 const addUserError = ref<string | null>(null)
-const newUser = ref({
+const newUser = ref<CreateUserRequest>({
   name: '',
   email: '',
   password: '',
-  role: 'User' as 'User' | 'Admin',
 })
 
 const fetchUsers = async () => {
   try {
     store.loading = true
     error.value = null
-    const response = await api.get('/users')
-    users.value = response.data.items || response.data
+    const { data, error: apiError } = await client.GET('/api/v1/users')
+
+    if (apiError || !data) {
+      throw new Error('Failed to fetch users')
+    }
+
+    users.value = data.items
     console.log('ユーザー一覧:', users.value)
   } catch (err: unknown) {
     error.value = getErrorMessage(err)
@@ -39,7 +43,17 @@ const promoteToAdmin = async (userId: string) => {
 
   try {
     isUpdating.value = true
-    await api.put(`/users/${userId}/role`, { role: 'Admin' })
+    const roleUpdateData: UpdateUserRoleRequest = { role: 'Admin' }
+
+    const { error } = await client.PUT('/api/v1/users/{user_id}/role', {
+      params: { path: { user_id: userId } },
+      body: roleUpdateData,
+    })
+
+    if (error) {
+      throw new Error('Failed to promote user to admin')
+    }
+
     await fetchUsers()
   } catch (err: unknown) {
     error.value = getErrorMessage(err)
@@ -54,7 +68,17 @@ const demoteToUser = async (userId: string) => {
 
   try {
     isUpdating.value = true
-    await api.put(`/users/${userId}/role`, { role: 'User' })
+    const roleUpdateData: UpdateUserRoleRequest = { role: 'User' }
+
+    const { error } = await client.PUT('/api/v1/users/{user_id}/role', {
+      params: { path: { user_id: userId } },
+      body: roleUpdateData,
+    })
+
+    if (error) {
+      throw new Error('Failed to demote user')
+    }
+
     await fetchUsers()
   } catch (err: unknown) {
     error.value = getErrorMessage(err)
@@ -69,7 +93,14 @@ const deleteUser = async (userId: string) => {
 
   try {
     isUpdating.value = true
-    await api.delete(`/users/${userId}`)
+    const { error } = await client.DELETE('/api/v1/users/{user_id}', {
+      params: { path: { user_id: userId } },
+    })
+
+    if (error) {
+      throw new Error('Failed to delete user')
+    }
+
     await fetchUsers()
   } catch (err: unknown) {
     error.value = getErrorMessage(err)
@@ -84,12 +115,13 @@ const createUser = async () => {
     isCreating.value = true
     addUserError.value = null
 
-    await api.post('/users', {
-      name: newUser.value.name,
-      email: newUser.value.email,
-      password: newUser.value.password,
-      role: newUser.value.role,
+    const { error } = await client.POST('/api/v1/users', {
+      body: newUser.value,
     })
+
+    if (error) {
+      throw new Error('Failed to create user')
+    }
 
     await fetchUsers()
     closeModal()
@@ -108,7 +140,6 @@ const closeModal = () => {
     name: '',
     email: '',
     password: '',
-    role: 'User',
   }
 }
 
@@ -226,14 +257,6 @@ onMounted(() => {
               placeholder="パスワードを入力"
               minlength="6"
             />
-          </div>
-
-          <div :class="$style.formGroup">
-            <label :class="$style.label">権限</label>
-            <select v-model="newUser.role" :class="$style.select">
-              <option value="User">User</option>
-              <option value="Admin">Admin</option>
-            </select>
           </div>
 
           <div v-if="addUserError" :class="$style.error">
