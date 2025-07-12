@@ -85,7 +85,13 @@ pub async fn return_book(
     Path((item_id, checkout_id)): Path<(ItemId, CheckoutId)>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
-    let update_returned = UpdateReturned::new(checkout_id, item_id, user.id(), chrono::Utc::now());
+    let update_returned = UpdateReturned::new(
+        checkout_id,
+        item_id,
+        user.id(),
+        user.user.role,
+        chrono::Utc::now(),
+    );
 
     registry
         .checkout_repository()

@@ -5,6 +5,7 @@ use kernel::model::checkout::{
     event::{CreateCheckout, UpdateReturned},
 };
 use kernel::model::id::{CheckoutId, ItemId, UserId};
+use kernel::model::role::Role;
 use kernel::repository::checkout::CheckoutRepository;
 use shared::error::{AppError, AppResult};
 
@@ -116,11 +117,24 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
             match res {
                 Some(CheckoutStateRow {
                     checkout_id: Some(c),
+                    user_id: Some(_u),
+                    ..
+                }) if c != event.checkout_id => {
+                    return Err(AppError::UnprocessableEntity(format!(
+                        "Checkout ID mismatch for item ({}). Expected: {}, Got: {}",
+                        event.item_id, c, event.checkout_id
+                    )));
+                }
+                Some(CheckoutStateRow {
+                    checkout_id: Some(c),
                     user_id: Some(u),
                     ..
-                }) if (c, u) != (event.checkout_id, event.returned_by) => {
+                }) if c == event.checkout_id
+                    && u != event.returned_by
+                    && event.returned_by_role != Role::Admin =>
+                {
                     return Err(AppError::UnprocessableEntity(format!(
-                        "Designated checkout (id({}), users({}), items({})) cannot be returned",
+                        "Designated checkout (id({}), users({}), items({})) cannot be returned by non-admin user",
                         event.checkout_id, event.returned_by, event.item_id
                     )));
                 }
@@ -321,6 +335,7 @@ mod tests {
             checkout_id: unreturned[0].id,
             item_id,
             returned_by: user_id,
+            returned_by_role: Role::User,
             returned_at: return_time,
         };
         repo.update_returned(event).await?;
@@ -370,15 +385,61 @@ mod tests {
         };
         assert!(repo.create(event).await.is_err());
 
-        // Test incorrect user return
+        // Test incorrect user return (non-admin)
         let unreturned = repo.find_unreturned_by_user_id(user_id1).await?;
         let event = UpdateReturned {
             checkout_id: unreturned[0].id,
             item_id,
-            returned_by: user_id2, // Wrong user
+            returned_by: user_id2,        // Wrong user
+            returned_by_role: Role::User, // Non-admin user
             returned_at: Utc::now(),
         };
         assert!(repo.update_returned(event).await.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "item"))]
+    async fn test_admin_can_return_any_item(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool));
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
+        let user_id1 = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?; // Regular user who checks out
+        let admin_user_id = UserId::from_str("050afe56-c3da-4448-8e4d-6f44007d2ca5")?; // Admin user who returns
+        let checkout_time = Utc::now();
+
+        // Regular user checks out item
+        let event = CreateCheckout {
+            item_id,
+            checked_out_by: user_id1,
+            checked_out_at: checkout_time,
+        };
+        repo.create(event).await?;
+
+        // Verify checkout exists
+        let unreturned = repo.find_unreturned_by_user_id(user_id1).await?;
+        assert_eq!(unreturned.len(), 1);
+        let checkout = &unreturned[0];
+
+        // Admin returns the item (different user than who checked it out)
+        let event = UpdateReturned {
+            checkout_id: checkout.id,
+            item_id,
+            returned_by: admin_user_id,    // Different user (admin)
+            returned_by_role: Role::Admin, // Admin role
+            returned_at: Utc::now(),
+        };
+
+        // This should succeed because admin can return any item
+        repo.update_returned(event).await?;
+
+        // Verify the item is now returned
+        let unreturned_after = repo.find_unreturned_by_user_id(user_id1).await?;
+        assert_eq!(unreturned_after.len(), 0);
+
+        // Verify it appears in history
+        let history = repo.find_history_by_item_id(item_id).await?;
+        assert_eq!(history.len(), 1);
+        assert!(history[0].returned_at.is_some());
 
         Ok(())
     }
@@ -414,6 +475,7 @@ mod tests {
             checkout_id: all_unreturned[0].id,
             item_id,
             returned_by: user_id1,
+            returned_by_role: Role::User,
             returned_at: Utc::now(),
         };
         repo.update_returned(event).await?;
@@ -434,6 +496,7 @@ mod tests {
             checkout_id: second_checkout.id,
             item_id,
             returned_by: user_id1,
+            returned_by_role: Role::User,
             returned_at: Utc::now(),
         };
         repo.update_returned(event).await?;

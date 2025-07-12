@@ -430,6 +430,7 @@ mod tests {
             checkout::event::{CreateCheckout, UpdateReturned},
             id::UserId,
             item::general::GeneralItem,
+            role::Role,
         },
         repository::checkout::CheckoutRepository,
     };
@@ -910,6 +911,7 @@ mod tests {
                     checkout_id: co.checkout_id,
                     item_id,
                     returned_by: user_id1,
+                    returned_by_role: Role::User,
                     returned_at: Utc::now(),
                 })
                 .await?;
@@ -947,6 +949,7 @@ mod tests {
                     checkout_id: co.checkout_id,
                     item_id,
                     returned_by: user_id2,
+                    returned_by_role: Role::User,
                     returned_at: Utc::now(),
                 })
                 .await?;

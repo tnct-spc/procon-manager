@@ -62,6 +62,25 @@ pub fn fixture(mut fixture_auth: MockAppRegistryExt) -> MockAppRegistryExt {
     fixture_auth
 }
 
+#[fixture]
+pub fn fixture_admin(mut fixture_auth: MockAppRegistryExt) -> MockAppRegistryExt {
+    fixture_auth.expect_user_repository().returning(|| {
+        let mut mock_user_repository = MockUserRepository::new();
+        mock_user_repository
+            .expect_find_current_user()
+            .returning(|id| {
+                Ok(Some(User {
+                    id,
+                    name: "admin-user".into(),
+                    email: "admin@example.com".into(),
+                    role: Role::Admin,
+                }))
+            });
+        Arc::new(mock_user_repository)
+    });
+    fixture_auth
+}
+
 pub trait TestRequestExt {
     fn bearer(self) -> Builder;
     fn application_json(self) -> Builder;

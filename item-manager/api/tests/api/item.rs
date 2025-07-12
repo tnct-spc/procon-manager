@@ -19,7 +19,7 @@ use tower::ServiceExt;
 
 use crate::{
     deserialize_json,
-    helper::{TestRequestExt, fixture, make_router, v1},
+    helper::{TestRequestExt, fixture, fixture_admin, make_router, v1},
 };
 
 #[rstest]
@@ -429,6 +429,75 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
     assert_eq!(checkout.checked_out_at, now);
     assert_eq!(checkout.returned_at, Some(now));
     assert_eq!(checkout.item_id, item_id);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn return_item_as_admin_200(
+    mut fixture_admin: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let checkout_id = CheckoutId::new();
+
+    fixture_admin
+        .expect_checkout_repository()
+        .returning(move || {
+            let mut mock = MockCheckoutRepository::new();
+            mock.expect_update_returned().returning(|event| {
+                // Verify that the admin role is passed correctly
+                assert_eq!(event.returned_by_role, kernel::model::role::Role::Admin);
+                Ok(())
+            });
+            Arc::new(mock)
+        });
+
+    let app = make_router(fixture_admin);
+
+    let req = Request::put(v1(&format!(
+        "/items/{item_id}/checkouts/{checkout_id}/returned"
+    )))
+    .bearer()
+    .body(Body::empty())?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::OK);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn return_item_non_admin_fails_422(
+    mut fixture: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let checkout_id = CheckoutId::new();
+
+    fixture.expect_checkout_repository().returning(move || {
+        let mut mock = MockCheckoutRepository::new();
+        mock.expect_update_returned().returning(|event| {
+            // Verify that the user role is passed correctly
+            assert_eq!(event.returned_by_role, kernel::model::role::Role::User);
+            // Simulate the repository error when a non-admin tries to return someone else's item
+            Err(shared::error::AppError::UnprocessableEntity(
+                "Designated checkout cannot be returned by non-admin user".into(),
+            ))
+        });
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture);
+
+    let req = Request::put(v1(&format!(
+        "/items/{item_id}/checkouts/{checkout_id}/returned"
+    )))
+    .bearer()
+    .body(Body::empty())?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::UNPROCESSABLE_ENTITY);
 
     Ok(())
 }

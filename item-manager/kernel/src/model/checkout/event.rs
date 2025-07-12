@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use derive_new::new;
 
 use crate::model::id::{CheckoutId, ItemId, UserId};
+use crate::model::role::Role;
 
 #[derive(new)]
 pub struct CreateCheckout {
@@ -15,5 +16,6 @@ pub struct UpdateReturned {
     pub checkout_id: CheckoutId,
     pub item_id: ItemId,
     pub returned_by: UserId,
+    pub returned_by_role: Role,
     pub returned_at: DateTime<Utc>,
 }
