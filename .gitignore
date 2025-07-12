@@ -4,9 +4,8 @@ target
 /.pre-commit-config.yaml
 /data
 .env-item
+.env
 
-# Ignore CLAUDE.md files
-frontend/CLAUDE.md
 CLAUDE.md
 
 # OS generated files

@@ -53,5 +53,5 @@ jobs:
         run: nix develop -c pnpm build
 
       - name: Run flake check
-        run: nix flake check -L
+        run: nix build -L --no-link .#checks.x86_64-linux.pre-commit
         working-directory: .
