@@ -5,7 +5,9 @@ use kernel::model::id::UserId;
 use kernel::model::role::Role;
 use kernel::model::user::{
     User,
-    event::{CreateUser, DeleteUser, UpdateUserPassword, UpdateUserRole},
+    event::{
+        CreateUser, DeleteUser, UpdateUserEmail, UpdateUserName, UpdateUserPassword, UpdateUserRole,
+    },
 };
 use kernel::repository::user::UserRepository;
 use shared::error::{AppError, AppResult};
@@ -148,6 +150,44 @@ impl UserRepository for UserRepositoryImpl {
         Ok(())
     }
 
+    async fn update_name(&self, event: UpdateUserName) -> AppResult<()> {
+        let res = sqlx::query!(
+            r#"
+                UPDATE users
+                SET name = $2
+                WHERE user_id = $1
+            "#,
+            event.user_id.raw(),
+            event.name
+        )
+        .execute(self.db.inner_ref())
+        .await
+        .map_err(AppError::SpecificOperationError)?;
+        if res.rows_affected() < 1 {
+            return Err(AppError::EntityNotFound("Specified user not found".into()));
+        }
+        Ok(())
+    }
+
+    async fn update_email(&self, event: UpdateUserEmail) -> AppResult<()> {
+        let res = sqlx::query!(
+            r#"
+                UPDATE users
+                SET email = $2
+                WHERE user_id = $1
+            "#,
+            event.user_id.raw(),
+            event.email
+        )
+        .execute(self.db.inner_ref())
+        .await
+        .map_err(AppError::SpecificOperationError)?;
+        if res.rows_affected() < 1 {
+            return Err(AppError::EntityNotFound("Specified user not found".into()));
+        }
+        Ok(())
+    }
+
     async fn delete(&self, event: DeleteUser) -> AppResult<()> {
         let res = sqlx::query!(
             r#"
@@ -233,6 +273,28 @@ mod tests {
         let updated_user = repo.find_current_user(user.id).await?.unwrap();
         assert_eq!(updated_user.role, Role::Admin);
 
+        // Test update name
+        let new_name = "Updated Name".to_string();
+        repo.update_name(UpdateUserName {
+            user_id: user.id,
+            name: new_name.clone(),
+        })
+        .await?;
+
+        let updated_user = repo.find_current_user(user.id).await?.unwrap();
+        assert_eq!(updated_user.name, new_name);
+
+        // Test update email
+        let new_email = "updated@example.com".to_string();
+        repo.update_email(UpdateUserEmail {
+            user_id: user.id,
+            email: new_email.clone(),
+        })
+        .await?;
+
+        let updated_user = repo.find_current_user(user.id).await?.unwrap();
+        assert_eq!(updated_user.email, new_email);
+
         // Test find all users
         let users = repo.find_all().await?;
         assert!(!users.is_empty());
@@ -280,6 +342,24 @@ mod tests {
                 user_id: non_existent_id,
                 current_password: "password".into(),
                 new_password: "new_password".into(),
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test update name for non-existent user
+        let result = repo
+            .update_name(UpdateUserName {
+                user_id: non_existent_id,
+                name: "New Name".into(),
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test update email for non-existent user
+        let result = repo
+            .update_email(UpdateUserEmail {
+                user_id: non_existent_id,
+                email: "new@example.com".into(),
             })
             .await;
         assert!(result.is_err());

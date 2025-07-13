@@ -3,7 +3,8 @@ use crate::{
     model::{
         checkout::CheckoutsResponse,
         user::{
-            CreateUserRequest, RoleName, UpdateUserPasswordRequest,
+            CreateUserRequest, RoleName, UpdateUserEmailRequest, UpdateUserEmailRequestWithUserId,
+            UpdateUserNameRequest, UpdateUserNameRequestWithUserId, UpdateUserPasswordRequest,
             UpdateUserPasswordRequestWithUserId, UpdateUserRoleRequest,
             UpdateUserRoleRequestWithUserId, UserResponse, UsersResponse,
         },
@@ -29,6 +30,8 @@ use utoipa::OpenApi;
         change_role,
         get_current_user,
         change_password,
+        change_name,
+        change_email,
         get_checkouts
     ),
     components(
@@ -38,6 +41,8 @@ use utoipa::OpenApi;
             CreateUserRequest,
             UpdateUserPasswordRequest,
             UpdateUserRoleRequest,
+            UpdateUserNameRequest,
+            UpdateUserEmailRequest,
             CheckoutsResponse,
             RoleName
         )
@@ -222,6 +227,66 @@ pub async fn change_password(
     registry
         .user_repository()
         .update_password(UpdateUserPasswordRequestWithUserId::new(user.id(), req).into())
+        .await?;
+
+    Ok(StatusCode::OK)
+}
+
+/// Change user name
+///
+/// Update the authenticated user's name
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/me/name",
+    request_body = UpdateUserNameRequest,
+    responses(
+        (status = 200, description = "Name updated successfully"),
+        (status = 400, description = "Invalid request body"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
+pub async fn change_name(
+    user: AuthorizedUser,
+    State(registry): State<AppRegistry>,
+    Json(req): Json<UpdateUserNameRequest>,
+) -> AppResult<StatusCode> {
+    req.validate()?;
+
+    registry
+        .user_repository()
+        .update_name(UpdateUserNameRequestWithUserId::new(user.id(), req).into())
+        .await?;
+
+    Ok(StatusCode::OK)
+}
+
+/// Change user email
+///
+/// Update the authenticated user's email address
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/me/email",
+    request_body = UpdateUserEmailRequest,
+    responses(
+        (status = 200, description = "Email updated successfully"),
+        (status = 400, description = "Invalid request body"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("jwt" = [])),
+    tag = "users"
+)]
+pub async fn change_email(
+    user: AuthorizedUser,
+    State(registry): State<AppRegistry>,
+    Json(req): Json<UpdateUserEmailRequest>,
+) -> AppResult<StatusCode> {
+    req.validate()?;
+
+    registry
+        .user_repository()
+        .update_email(UpdateUserEmailRequestWithUserId::new(user.id(), req).into())
         .await?;
 
     Ok(StatusCode::OK)

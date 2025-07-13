@@ -2,7 +2,10 @@ use crate::model::{
     id::UserId,
     user::{
         User,
-        event::{CreateUser, DeleteUser, UpdateUserPassword, UpdateUserRole},
+        event::{
+            CreateUser, DeleteUser, UpdateUserEmail, UpdateUserName, UpdateUserPassword,
+            UpdateUserRole,
+        },
     },
 };
 use async_trait::async_trait;
@@ -16,5 +19,7 @@ pub trait UserRepository: Send + Sync {
     async fn create(&self, event: CreateUser) -> AppResult<User>;
     async fn update_password(&self, event: UpdateUserPassword) -> AppResult<()>;
     async fn update_role(&self, event: UpdateUserRole) -> AppResult<()>;
+    async fn update_name(&self, event: UpdateUserName) -> AppResult<()>;
+    async fn update_email(&self, event: UpdateUserEmail) -> AppResult<()>;
     async fn delete(&self, event: DeleteUser) -> AppResult<()>;
 }
