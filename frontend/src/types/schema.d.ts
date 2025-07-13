@@ -234,6 +234,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/v1/users/me/email': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /**
+     * Change user email
+     * @description Update the authenticated user's email address
+     */
+    put: operations['change_email']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/users/me/name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /**
+     * Change user name
+     * @description Update the authenticated user's name
+     */
+    put: operations['change_name']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/v1/users/me/password': {
     parameters: {
       query?: never
@@ -462,6 +502,12 @@ export interface components {
           mac_address: string
           name: string
         }
+    UpdateUserEmailRequest: {
+      email: string
+    }
+    UpdateUserNameRequest: {
+      name: string
+    }
     UpdateUserPasswordRequest: {
       currentPassword: string
       newPassword: string
@@ -976,6 +1022,78 @@ export interface operations {
         content: {
           'application/json': components['schemas']['CheckoutsResponse']
         }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  change_email: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateUserEmailRequest']
+      }
+    }
+    responses: {
+      /** @description Email updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  change_name: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateUserNameRequest']
+      }
+    }
+    responses: {
+      /** @description Name updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Unauthorized */
       401: {

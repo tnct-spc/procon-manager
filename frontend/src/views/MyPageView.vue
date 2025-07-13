@@ -2,6 +2,8 @@
 import { onMounted } from 'vue'
 import BorrowedItemsList from '../components/mypage/BorrowedItemsList.vue'
 import PasswordChangeForm from '../components/mypage/PasswordChangeForm.vue'
+import NameChangeForm from '../components/mypage/NameChangeForm.vue'
+import EmailChangeForm from '../components/mypage/EmailChangeForm.vue'
 import { useAppStore } from '../stores/counter'
 
 const store = useAppStore()
@@ -13,6 +15,18 @@ onMounted(async () => {
 const onPasswordChangeSuccess = () => {
   // パスワード変更成功時の処理
   alert('パスワードが正常に変更されました。')
+}
+
+const onNameChangeSuccess = async () => {
+  // 名前変更成功時の処理：ユーザー情報を再取得
+  await store.getCurrentUser()
+  alert('名前が正常に変更されました。')
+}
+
+const onEmailChangeSuccess = async () => {
+  // メールアドレス変更成功時の処理：ユーザー情報を再取得
+  await store.getCurrentUser()
+  alert('メールアドレスが正常に変更されました。')
 }
 </script>
 
@@ -44,6 +58,26 @@ const onPasswordChangeSuccess = () => {
             <span :class="$style.value">{{ store.currentUser.role }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- 名前変更セクション -->
+      <div :class="$style.section">
+        <h2 :class="$style.sectionTitle">名前変更</h2>
+        <NameChangeForm
+          v-if="store.currentUser"
+          :current-name="store.currentUser.name"
+          @success="onNameChangeSuccess"
+        />
+      </div>
+
+      <!-- メールアドレス変更セクション -->
+      <div :class="$style.section">
+        <h2 :class="$style.sectionTitle">メールアドレス変更</h2>
+        <EmailChangeForm
+          v-if="store.currentUser"
+          :current-email="store.currentUser.email"
+          @success="onEmailChangeSuccess"
+        />
       </div>
 
       <!-- パスワード変更セクション -->

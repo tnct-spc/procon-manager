@@ -21,6 +21,18 @@ pub struct UpdateUserPassword {
 }
 
 #[derive(Debug)]
+pub struct UpdateUserName {
+    pub user_id: UserId,
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct UpdateUserEmail {
+    pub user_id: UserId,
+    pub email: String,
+}
+
+#[derive(Debug)]
 pub struct DeleteUser {
     pub user_id: UserId,
 }

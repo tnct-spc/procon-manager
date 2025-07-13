@@ -5,7 +5,7 @@ use kernel::model::{
     role::Role,
     user::{
         User,
-        event::{CreateUser, UpdateUserPassword, UpdateUserRole},
+        event::{CreateUser, UpdateUserEmail, UpdateUserName, UpdateUserPassword, UpdateUserRole},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -63,13 +63,13 @@ impl From<User> for UserResponse {
     }
 }
 
-#[derive(Deserialize, Validate, ToSchema)]
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserPasswordRequest {
     #[garde(length(min = 1))]
-    current_password: String,
+    pub current_password: String,
     #[garde(length(min = 1))]
-    new_password: String,
+    pub new_password: String,
 }
 
 #[derive(new)]
@@ -84,15 +84,15 @@ impl From<UpdateUserPasswordRequestWithUserId> for UpdateUserPassword {
     }
 }
 
-#[derive(Deserialize, Validate, ToSchema)]
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
     #[garde(length(min = 1))]
-    name: String,
+    pub name: String,
     #[garde(email)]
-    email: String,
+    pub email: String,
     #[garde(length(min = 1))]
-    password: String,
+    pub password: String,
 }
 
 impl From<CreateUserRequest> for CreateUser {
@@ -105,10 +105,10 @@ impl From<CreateUserRequest> for CreateUser {
     }
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRoleRequest {
-    role: RoleName,
+    pub role: RoleName,
 }
 
 #[derive(new)]
@@ -118,6 +118,42 @@ impl From<UpdateUserRoleRequestWithUserId> for UpdateUserRole {
         Self {
             user_id: value.0,
             role: value.1.role.into(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateUserNameRequest {
+    #[garde(length(min = 1))]
+    pub name: String,
+}
+
+#[derive(new)]
+pub struct UpdateUserNameRequestWithUserId(UserId, UpdateUserNameRequest);
+impl From<UpdateUserNameRequestWithUserId> for UpdateUserName {
+    fn from(value: UpdateUserNameRequestWithUserId) -> Self {
+        Self {
+            user_id: value.0,
+            name: value.1.name,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateUserEmailRequest {
+    #[garde(email)]
+    pub email: String,
+}
+
+#[derive(new)]
+pub struct UpdateUserEmailRequestWithUserId(UserId, UpdateUserEmailRequest);
+impl From<UpdateUserEmailRequestWithUserId> for UpdateUserEmail {
+    fn from(value: UpdateUserEmailRequestWithUserId) -> Self {
+        Self {
+            user_id: value.0,
+            email: value.1.email,
         }
     }
 }
