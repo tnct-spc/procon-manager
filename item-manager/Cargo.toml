@@ -16,18 +16,18 @@ anyhow = "1.0.95"
 api = { path = "./api" }
 async-trait = "0.1.86"
 axum = { version = "0.8.1", features = ["macros"] }
-axum-extra = { version = "0.10.0", features = ["typed-header"] }
+axum-extra = { version = "0.12.5", features = ["typed-header"] }
 bcrypt = "0.17.0"
 chrono = { version = "0.4.40", default-features = false, features = ["serde"] }
 derive-new = "0.7.0"
 garde = { version = "0.22.0", features = ["derive", "email"] }
 kernel = { path = "./kernel" }
 mac_address = { version = "1.0.1", features = ["serde"] }
-mockall = "0.13.1"
+mockall = "0.14.0"
 registry = { path = "./registry" }
 serde = { version = "1.0.217", features = ["derive"] }
 shared = { path = "./shared" }
-sqlx = { version = "0.8.3", features = [
+sqlx = { version = "0.8.6", features = [
   "runtime-tokio",
   "uuid",
   "chrono",
