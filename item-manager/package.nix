@@ -1,6 +1,5 @@
 {
   lib,
-  makeRustPlatform,
   rustPlatform,
 }:
 rustPlatform.buildRustPackage {
