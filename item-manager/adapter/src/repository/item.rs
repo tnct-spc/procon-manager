@@ -94,6 +94,7 @@ impl ItemRepository for ItemRepositoryImpl {
             offset,
             category,
         } = options;
+        let category_param = category.map(|value| value.as_ref().to_string());
 
         let rows: Vec<PaginatedItemRow> = sqlx::query_as!(
             PaginatedItemRow,
@@ -103,31 +104,21 @@ impl ItemRepository for ItemRepositoryImpl {
                     i.item_id AS id,
                     i.category AS category
                 FROM items AS i
+                WHERE $3::text IS NULL OR i.category = $3
                 ORDER BY i.created_at DESC
                 LIMIT $1
                 OFFSET $2
             "#,
             limit,
-            offset
+            offset,
+            category_param
         )
         .fetch_all(self.db.inner_ref())
         .await
         .map_err(AppError::SpecificOperationError)?;
 
-        let item_ids = rows
-            .into_iter()
-            .filter_map(|r| {
-                let Some(ref category) = category else {
-                    return Some(r.id);
-                };
-                if ItemCategory::from_str(&r.category).unwrap() == *category {
-                    Some(r.id)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<ItemId>>();
-        let total = item_ids.len() as i64;
+        let total = rows.first().map(|row| row.total).unwrap_or(0);
+        let item_ids = rows.into_iter().map(|row| row.id).collect::<Vec<ItemId>>();
         let mut checkouts = self.find_checkouts(&item_ids).await?;
 
         let rows: Vec<ItemRow> = sqlx::query_as!(
