@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                    SELECT\n                    i.item_id,\n                    c.checkout_id AS \"checkout_id?: CheckoutId\",\n                    c.user_id AS \"user_id?: UserId\"\n                    FROM items AS i\n                    LEFT OUTER JOIN checkouts AS c USING(item_id)\n                    WHERE item_id = $1;\n                ",
+  "query": "\n                    SELECT\n                    c.item_id,\n                    c.checkout_id AS \"checkout_id?: CheckoutId\",\n                    c.user_id AS \"user_id?: UserId\"\n                    FROM checkouts AS c\n                    WHERE c.checkout_id = $1\n                    AND c.item_id = $2;\n                ",
   "describe": {
     "columns": [
       {
@@ -21,6 +21,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -30,5 +31,5 @@
       false
     ]
   },
-  "hash": "e1a1ebb63cecd2e2ada011775d9951ae2c0d246c3e6ec9d28a3b02afc68d16e3"
+  "hash": "c4faf9a11a3628a595217c1015e64b5d2698dd994893d71b32b21af33d457203"
 }

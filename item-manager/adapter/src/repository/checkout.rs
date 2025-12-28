@@ -101,13 +101,14 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                 CheckoutStateRow,
                 r#"
                     SELECT
-                    i.item_id,
+                    c.item_id,
                     c.checkout_id AS "checkout_id?: CheckoutId",
                     c.user_id AS "user_id?: UserId"
-                    FROM items AS i
-                    LEFT OUTER JOIN checkouts AS c USING(item_id)
-                    WHERE item_id = $1;
+                    FROM checkouts AS c
+                    WHERE c.checkout_id = $1
+                    AND c.item_id = $2;
                 "#,
+                event.checkout_id.raw(),
                 event.item_id.raw(),
             )
             .fetch_optional(&mut *tx)
@@ -116,23 +117,10 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
 
             match res {
                 Some(CheckoutStateRow {
-                    checkout_id: Some(c),
-                    user_id: Some(_u),
-                    ..
-                }) if c != event.checkout_id => {
-                    return Err(AppError::UnprocessableEntity(format!(
-                        "Checkout ID mismatch for item ({}). Expected: {}, Got: {}",
-                        event.item_id, c, event.checkout_id
-                    )));
-                }
-                Some(CheckoutStateRow {
-                    checkout_id: Some(c),
+                    checkout_id: Some(_c),
                     user_id: Some(u),
                     ..
-                }) if c == event.checkout_id
-                    && u != event.returned_by
-                    && event.returned_by_role != Role::Admin =>
-                {
+                }) if u != event.returned_by && event.returned_by_role != Role::Admin => {
                     return Err(AppError::UnprocessableEntity(format!(
                         "Designated checkout (id({}), users({}), items({})) cannot be returned by non-admin user",
                         event.checkout_id, event.returned_by, event.item_id
@@ -140,8 +128,8 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                 }
                 None => {
                     return Err(AppError::EntityNotFound(format!(
-                        "Item ({}) not found.",
-                        event.item_id
+                        "Checkout ({}) for item ({}) not found.",
+                        event.checkout_id, event.item_id
                     )));
                 }
                 _ => {}
@@ -155,10 +143,12 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                 SELECT checkout_id, item_id, user_id, checked_out_at, $2
                 FROM checkouts
                 WHERE checkout_id = $1
+                  AND item_id = $3
                 ;
             "#,
             event.checkout_id.raw(),
             event.returned_at,
+            event.item_id.raw(),
         )
         .execute(&mut *tx)
         .await
@@ -172,9 +162,10 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
 
         let res = sqlx::query!(
             r#"
-                DELETE FROM checkouts WHERE checkout_id = $1;
+                DELETE FROM checkouts WHERE checkout_id = $1 AND item_id = $2;
             "#,
             event.checkout_id.raw(),
+            event.item_id.raw(),
         )
         .execute(&mut *tx)
         .await
@@ -395,6 +386,53 @@ mod tests {
             returned_at: Utc::now(),
         };
         assert!(repo.update_returned(event).await.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "item_list"))]
+    async fn test_return_with_mismatched_item_id_is_rejected(
+        pool: sqlx::PgPool,
+    ) -> anyhow::Result<()> {
+        let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let admin_user_id = UserId::from_str("5b4c96ac-316a-4bee-8e69-cac5eb84ff4c")?;
+
+        let rows = sqlx::query!(
+            r#"
+                SELECT item_id
+                FROM items
+                ORDER BY created_at ASC
+                LIMIT 2;
+            "#
+        )
+        .fetch_all(&pool)
+        .await?;
+
+        let item_id1 = ItemId::from(rows[0].item_id);
+        let item_id2 = ItemId::from(rows[1].item_id);
+
+        let event = CreateCheckout {
+            item_id: item_id1,
+            checked_out_by: admin_user_id,
+            checked_out_at: Utc::now(),
+        };
+        repo.create(event).await?;
+
+        let unreturned = repo.find_unreturned_by_user_id(admin_user_id).await?;
+        assert_eq!(unreturned.len(), 1);
+
+        let event = UpdateReturned {
+            checkout_id: unreturned[0].id,
+            item_id: item_id2,
+            returned_by: admin_user_id,
+            returned_by_role: Role::Admin,
+            returned_at: Utc::now(),
+        };
+        assert!(repo.update_returned(event).await.is_err());
+
+        let unreturned_after = repo.find_unreturned_by_user_id(admin_user_id).await?;
+        assert_eq!(unreturned_after.len(), 1);
+        assert_eq!(unreturned_after[0].item_id, item_id1);
 
         Ok(())
     }

@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT item_id\n                FROM items\n                ORDER BY created_at ASC\n                LIMIT 2;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8f9d824a8e1710e3c1222fa3bdb2de13277e5f4758eea12a38dc00d4dbfa35e1"
+}
