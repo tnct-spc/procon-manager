@@ -41,7 +41,10 @@ impl AuthRepository for AuthRepositoryImpl {
         )
         .fetch_one(self.db.inner_ref())
         .await
-        .map_err(AppError::SpecificOperationError)?;
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => AppError::UnauthenticatedError,
+            other => AppError::SpecificOperationError(other),
+        })?;
         let valid = bcrypt::verify(password, &user_item.password_hash)?;
         if !valid {
             return Err(AppError::UnauthenticatedError);
@@ -90,13 +93,13 @@ mod tests {
         let result = auth_repo
             .verify_user("auth_test@example.com", "wrong_password")
             .await;
-        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::UnauthenticatedError)));
 
         // Test with non-existent email
         let result = auth_repo
             .verify_user("nonexistent@example.com", "test_password")
             .await;
-        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::UnauthenticatedError)));
 
         Ok(())
     }
