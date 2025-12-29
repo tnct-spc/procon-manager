@@ -2,6 +2,7 @@ use crate::{
     extractor::AuthorizedUser,
     model::{
         checkout::CheckoutsResponse,
+        error::ErrorResponse,
         user::{
             CreateUserRequest, RoleName, UpdateUserEmailRequest, UpdateUserEmailRequestWithUserId,
             UpdateUserNameRequest, UpdateUserNameRequestWithUserId, UpdateUserPasswordRequest,
@@ -44,7 +45,8 @@ use utoipa::OpenApi;
             UpdateUserNameRequest,
             UpdateUserEmailRequest,
             CheckoutsResponse,
-            RoleName
+            RoleName,
+            ErrorResponse
         )
     ),
     tags(
@@ -62,9 +64,9 @@ pub struct ApiDoc;
     request_body = CreateUserRequest,
     responses(
         (status = 200, description = "User created successfully", body = UserResponse),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -75,7 +77,9 @@ pub async fn register_user(
     Json(req): Json<CreateUserRequest>,
 ) -> AppResult<Json<UserResponse>> {
     if !user.is_admin() {
-        return Err(AppError::ForbiddenOperation);
+        return Err(AppError::ForbiddenOperation(
+            "Admin access required.".into(),
+        ));
     }
     req.validate()?;
 
@@ -92,7 +96,7 @@ pub async fn register_user(
     path = "/api/v1/users",
     responses(
         (status = 200, description = "Success", body = UsersResponse),
-        (status = 401, description = "Unauthorized"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -123,9 +127,9 @@ pub async fn list_users(
     ),
     responses(
         (status = 200, description = "User deleted successfully"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Forbidden - Admin access required"),
-        (status = 404, description = "User not found"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -136,7 +140,9 @@ pub async fn delete_user(
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
     if !user.is_admin() {
-        return Err(AppError::ForbiddenOperation);
+        return Err(AppError::ForbiddenOperation(
+            "Admin access required.".into(),
+        ));
     }
 
     registry
@@ -158,10 +164,10 @@ pub async fn delete_user(
     request_body = UpdateUserRoleRequest,
     responses(
         (status = 200, description = "Role updated successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Forbidden - Admin access required"),
-        (status = 404, description = "User not found"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -173,7 +179,9 @@ pub async fn change_role(
     Json(req): Json<UpdateUserRoleRequest>,
 ) -> AppResult<StatusCode> {
     if !user.is_admin() {
-        return Err(AppError::ForbiddenOperation);
+        return Err(AppError::ForbiddenOperation(
+            "Admin access required.".into(),
+        ));
     }
 
     registry
@@ -192,7 +200,7 @@ pub async fn change_role(
     path = "/api/v1/users/me",
     responses(
         (status = 200, description = "Success", body = UserResponse),
-        (status = 401, description = "Unauthorized"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -210,9 +218,9 @@ pub async fn get_current_user(user: AuthorizedUser) -> Json<UserResponse> {
     request_body = UpdateUserPasswordRequest,
     responses(
         (status = 200, description = "Password updated successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
-        (status = 403, description = "Invalid current password"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Invalid current password", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -241,8 +249,8 @@ pub async fn change_password(
     request_body = UpdateUserNameRequest,
     responses(
         (status = 200, description = "Name updated successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -271,8 +279,8 @@ pub async fn change_name(
     request_body = UpdateUserEmailRequest,
     responses(
         (status = 200, description = "Email updated successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -300,7 +308,7 @@ pub async fn change_email(
     path = "/api/v1/users/me/checkouts",
     responses(
         (status = 200, description = "Success", body = CheckoutsResponse),
-        (status = 401, description = "Unauthorized"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"

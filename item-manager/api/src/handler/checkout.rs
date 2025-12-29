@@ -11,7 +11,10 @@ use registry::AppRegistry;
 use shared::error::AppResult;
 use utoipa::OpenApi;
 
-use crate::{extractor::AuthorizedUser, model::checkout::CheckoutsResponse};
+use crate::{
+    extractor::AuthorizedUser,
+    model::{checkout::CheckoutsResponse, error::ErrorResponse},
+};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -22,7 +25,7 @@ use crate::{extractor::AuthorizedUser, model::checkout::CheckoutsResponse};
         checkout_history
     ),
     components(
-        schemas(CheckoutsResponse)
+        schemas(CheckoutsResponse, ErrorResponse)
     ),
     tags(
         (name = "checkouts", description = "Item checkout management endpoints")
@@ -41,9 +44,9 @@ pub struct ApiDoc;
     ),
     responses(
         (status = 201, description = "Item checked out successfully"),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item not found"),
-        (status = 409, description = "Item already checked out"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Item not found", body = ErrorResponse),
+        (status = 409, description = "Item already checked out", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "checkouts"
@@ -74,8 +77,9 @@ pub async fn checkout_book(
     ),
     responses(
         (status = 200, description = "Item returned successfully"),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item or checkout record not found"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Item or checkout record not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "checkouts"
@@ -108,7 +112,7 @@ pub async fn return_book(
     path = "/api/v1/checkouts",
     responses(
         (status = 200, description = "Success", body = CheckoutsResponse),
-        (status = 401, description = "Unauthorized"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "checkouts"
@@ -136,8 +140,8 @@ pub async fn show_checked_out_list(
     ),
     responses(
         (status = 200, description = "Success", body = CheckoutsResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item not found"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "checkouts"

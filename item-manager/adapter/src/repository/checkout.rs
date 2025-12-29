@@ -50,7 +50,7 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                     checkout_id: Some(_),
                     ..
                 }) => {
-                    return Err(AppError::UnprocessableEntity(format!(
+                    return Err(AppError::Conflict(format!(
                         "The item ({}) has already been checked out.",
                         event.item_id
                     )));
@@ -121,7 +121,7 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
                     user_id: Some(u),
                     ..
                 }) if u != event.returned_by && event.returned_by_role != Role::Admin => {
-                    return Err(AppError::UnprocessableEntity(format!(
+                    return Err(AppError::ForbiddenOperation(format!(
                         "Designated checkout (id({}), users({}), items({})) cannot be returned by non-admin user",
                         event.checkout_id, event.returned_by, event.item_id
                     )));

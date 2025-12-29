@@ -1985,6 +1985,7 @@ dependencies = [
  "axum",
  "bcrypt",
  "garde",
+ "serde",
  "sqlx",
  "strum",
  "thiserror",

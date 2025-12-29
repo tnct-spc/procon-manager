@@ -1,10 +1,18 @@
-use axum::http::StatusCode;
+use axum::{Json, http::StatusCode};
+use serde::Serialize;
 use thiserror::Error;
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub message: String,
+}
 
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("{0}")]
     UnprocessableEntity(String),
+    #[error("{0}")]
+    Conflict(String),
     #[error("{0}")]
     EntityNotFound(String),
     #[error("{0}")]
@@ -23,36 +31,43 @@ pub enum AppError {
     UnauthenticatedError,
     #[error("The authorization information is incorrect.")]
     UnauthorizedError,
-    #[error("In an unauthorized operation.")]
-    ForbiddenOperation,
+    #[error("{0}")]
+    ForbiddenOperation(String),
     #[error("{0}")]
     ConversionEntityError(String),
 }
 
 impl axum::response::IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
-        let status_code = match self {
-            AppError::UnprocessableEntity(_) => StatusCode::UNPROCESSABLE_ENTITY,
-            AppError::EntityNotFound(_) => StatusCode::NOT_FOUND,
-            AppError::ValidationError(_) | AppError::ConvertToUuidError(_) => {
-                StatusCode::BAD_REQUEST
-            }
-            AppError::UnauthorizedError | AppError::ForbiddenOperation => StatusCode::FORBIDDEN,
-            AppError::UnauthenticatedError => StatusCode::UNAUTHORIZED,
+        let (status_code, message) = match self {
+            AppError::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
+            AppError::Conflict(message) => (StatusCode::CONFLICT, message),
+            AppError::EntityNotFound(message) => (StatusCode::NOT_FOUND, message),
+            AppError::ValidationError(report) => (StatusCode::BAD_REQUEST, report.to_string()),
+            AppError::ConvertToUuidError(err) => (StatusCode::BAD_REQUEST, err.to_string()),
+            AppError::UnauthorizedError => (
+                StatusCode::FORBIDDEN,
+                "The authorization information is incorrect.".into(),
+            ),
+            AppError::ForbiddenOperation(message) => (StatusCode::FORBIDDEN, message),
+            AppError::UnauthenticatedError => (StatusCode::UNAUTHORIZED, "Login failed.".into()),
             e @ (AppError::TransactionError(_)
             | AppError::SpecificOperationError(_)
             | AppError::NoRowsAffectedError(_)
             | AppError::BcryptError(_)
             | AppError::ConversionEntityError(_)) => {
                 tracing::error!(
-                error.cause_chain = ?e,
-                error.message = %e,
-                "Unexpected error happened"
+                    error.cause_chain = ?e,
+                    error.message = %e,
+                    "Unexpected error happened"
                 );
-                StatusCode::INTERNAL_SERVER_ERROR
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error.".into(),
+                )
             }
         };
-        status_code.into_response()
+        (status_code, Json(ErrorResponse { message })).into_response()
     }
 }
 

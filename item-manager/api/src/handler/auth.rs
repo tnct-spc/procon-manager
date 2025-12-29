@@ -1,4 +1,7 @@
-use crate::model::auth::{AccessTokenResponse, LoginRequest};
+use crate::model::{
+    auth::{AccessTokenResponse, LoginRequest},
+    error::ErrorResponse,
+};
 use axum::{Json, extract::State};
 use kernel::model::auth::event::CreateToken;
 use registry::AppRegistry;
@@ -9,7 +12,7 @@ use utoipa::OpenApi;
 #[openapi(
     paths(login),
     components(
-        schemas(LoginRequest, AccessTokenResponse)
+        schemas(LoginRequest, AccessTokenResponse, ErrorResponse)
     ),
     tags(
         (name = "auth", description = "Authentication endpoints")
@@ -26,7 +29,7 @@ pub struct ApiDoc;
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = AccessTokenResponse),
-        (status = 400, description = "Invalid credentials"),
+        (status = 400, description = "Invalid credentials", body = ErrorResponse),
     ),
     tag = "auth"
 )]

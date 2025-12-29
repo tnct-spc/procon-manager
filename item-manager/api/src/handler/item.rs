@@ -12,6 +12,7 @@ use utoipa::OpenApi;
 use crate::{
     extractor::AuthorizedUser,
     model::{
+        error::ErrorResponse,
         item::{CreateItemRequest, ItemResponse, PaginatedItemResponse, UpdateItemRequest},
         list::ListQuery,
     },
@@ -36,7 +37,8 @@ use crate::{
             crate::model::item::LaptopResponse,
             crate::model::item::PaginatedItemResponse,
             crate::model::item::ItemCheckoutResponse,
-            ListQuery
+            ListQuery,
+            ErrorResponse
         )
     ),
     tags(
@@ -54,8 +56,8 @@ pub struct ApiDoc;
     request_body = CreateItemRequest,
     responses(
         (status = 201, description = "Item created successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
@@ -86,7 +88,7 @@ pub async fn create_item(
     ),
     responses(
         (status = 200, description = "Success", body = PaginatedItemResponse),
-        (status = 401, description = "Unauthorized"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
@@ -117,8 +119,8 @@ pub async fn list_items(
     ),
     responses(
         (status = 200, description = "Success", body = ItemResponse),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item not found"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
@@ -151,9 +153,9 @@ pub async fn get_item(
     request_body = UpdateItemRequest,
     responses(
         (status = 200, description = "Item updated successfully"),
-        (status = 400, description = "Invalid request body"),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item not found"),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
@@ -184,8 +186,8 @@ pub async fn update_item(
     ),
     responses(
         (status = 200, description = "Item deleted successfully"),
-        (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Item not found"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
