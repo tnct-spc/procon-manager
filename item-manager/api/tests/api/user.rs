@@ -271,7 +271,7 @@ async fn list_users_200(mut fixture_auth: registry::MockAppRegistryExt) -> anyho
                 id,
                 name: "test-user".into(),
                 email: "test@example.com".into(),
-                role: Role::User,
+                role: Role::Admin,
             }))
         });
 
@@ -301,6 +301,34 @@ async fn list_users_200(mut fixture_auth: registry::MockAppRegistryExt) -> anyho
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::OK);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn list_users_403(mut fixture_auth: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    fixture_auth.expect_user_repository().returning(move || {
+        let mut mock = MockUserRepository::new();
+
+        mock.expect_find_current_user().returning(|id| {
+            Ok(Some(User {
+                id,
+                name: "test-user".into(),
+                email: "test@example.com".into(),
+                role: Role::User,
+            }))
+        });
+
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture_auth);
+
+    let req = Request::get(v1("/users")).bearer().body(Body::empty())?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
 
     Ok(())
 }

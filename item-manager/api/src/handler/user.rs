@@ -97,14 +97,21 @@ pub async fn register_user(
     responses(
         (status = 200, description = "Success", body = UsersResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
 )]
 pub async fn list_users(
-    _user: AuthorizedUser,
+    user: AuthorizedUser,
     State(registry): State<AppRegistry>,
 ) -> AppResult<Json<UsersResponse>> {
+    if !user.is_admin() {
+        return Err(AppError::ForbiddenOperation(
+            "Admin access required.".into(),
+        ));
+    }
+
     let items = registry
         .user_repository()
         .find_all()
