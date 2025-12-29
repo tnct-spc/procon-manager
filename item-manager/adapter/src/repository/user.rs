@@ -111,7 +111,10 @@ impl UserRepository for UserRepositoryImpl {
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(AppError::SpecificOperationError)?
+        .map_err(|err| match err {
+            sqlx::Error::RowNotFound => AppError::EntityNotFound("Specified user not found".into()),
+            _ => AppError::SpecificOperationError(err),
+        })?
         .password_hash;
         verify_password(&event.current_password, &original_password_hash)?;
         let new_password_hash = hash_password(&event.new_password)?;

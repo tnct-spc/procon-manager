@@ -633,6 +633,50 @@ async fn change_password_200(mut fixture_auth: registry::MockAppRegistryExt) -> 
 
 #[rstest]
 #[tokio::test]
+async fn change_password_404_user_not_found(
+    mut fixture_auth: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    fixture_auth.expect_user_repository().returning(move || {
+        let mut mock = MockUserRepository::new();
+
+        mock.expect_find_current_user().returning(|id| {
+            Ok(Some(User {
+                id,
+                name: "test-user".into(),
+                email: "test@example.com".into(),
+                role: Role::User,
+            }))
+        });
+
+        mock.expect_update_password().returning(|_event| {
+            Err(shared::error::AppError::EntityNotFound(
+                "Specified user not found".into(),
+            ))
+        });
+
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture_auth);
+
+    let req = UpdateUserPasswordRequest {
+        current_password: "current_password".into(),
+        new_password: "new_password".into(),
+    };
+
+    let req = Request::put(v1("/users/me/password"))
+        .bearer()
+        .application_json()
+        .body(Body::from(serde_json::to_string(&req)?))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::NOT_FOUND);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
 async fn change_password_400_empty_password(
     fixture: registry::MockAppRegistryExt,
 ) -> anyhow::Result<()> {
