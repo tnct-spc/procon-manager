@@ -109,7 +109,7 @@ pub async fn return_book(
 /// Get a list of all items that are currently checked out
 #[utoipa::path(
     get,
-    path = "/api/v1/checkouts",
+    path = "/api/v1/items/checkouts",
     responses(
         (status = 200, description = "Success", body = CheckoutsResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
