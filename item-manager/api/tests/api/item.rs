@@ -398,6 +398,21 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
     let checkout_id = CheckoutId::new();
     let now = chrono::Utc::now();
 
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
+        mock.expect_find_by_id().returning(move |_id| {
+            Ok(Some(Item::Book(Book {
+                id: item_id,
+                name: "Test Book".into(),
+                isbn: "1234567890123".into(),
+                author: "Test Author".into(),
+                description: "Test Description".into(),
+                checkout: None,
+            })))
+        });
+        Arc::new(mock)
+    });
+
     fixture.expect_checkout_repository().returning(move || {
         let mut mock = MockCheckoutRepository::new();
         mock.expect_find_history_by_item_id().returning(move |_id| {
@@ -429,6 +444,27 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
     assert_eq!(checkout.checked_out_at, now);
     assert_eq!(checkout.returned_at, Some(now));
     assert_eq!(checkout.item_id, item_id);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn checkout_history_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    fixture.expect_item_repository().returning(move || {
+        let mut mock = MockItemRepository::new();
+        mock.expect_find_by_id().returning(|_id| Ok(None));
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture);
+
+    let req = Request::get(v1(&format!("/items/{}/checkout-history", ItemId::new())))
+        .bearer()
+        .body(Body::empty())?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::NOT_FOUND);
 
     Ok(())
 }

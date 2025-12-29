@@ -151,6 +151,13 @@ pub async fn checkout_history(
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<Json<CheckoutsResponse>> {
+    let exists = registry.item_repository().find_by_id(item_id).await?;
+    if exists.is_none() {
+        return Err(shared::error::AppError::EntityNotFound(
+            "Item not found".into(),
+        ));
+    }
+
     registry
         .checkout_repository()
         .find_history_by_item_id(item_id)

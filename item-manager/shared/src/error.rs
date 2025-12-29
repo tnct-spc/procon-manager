@@ -1,4 +1,5 @@
-use axum::{Json, http::StatusCode};
+use axum::http::HeaderValue;
+use axum::{Json, http::StatusCode, response::Response};
 use serde::Serialize;
 use thiserror::Error;
 
@@ -38,7 +39,7 @@ pub enum AppError {
 }
 
 impl axum::response::IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         let (status_code, message) = match self {
             AppError::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
             AppError::Conflict(message) => (StatusCode::CONFLICT, message),
@@ -46,7 +47,7 @@ impl axum::response::IntoResponse for AppError {
             AppError::ValidationError(report) => (StatusCode::BAD_REQUEST, report.to_string()),
             AppError::ConvertToUuidError(err) => (StatusCode::BAD_REQUEST, err.to_string()),
             AppError::UnauthorizedError => (
-                StatusCode::FORBIDDEN,
+                StatusCode::UNAUTHORIZED,
                 "The authorization information is incorrect.".into(),
             ),
             AppError::ForbiddenOperation(message) => (StatusCode::FORBIDDEN, message),
@@ -67,7 +68,14 @@ impl axum::response::IntoResponse for AppError {
                 )
             }
         };
-        (status_code, Json(ErrorResponse { message })).into_response()
+        let mut response = (status_code, Json(ErrorResponse { message })).into_response();
+        if status_code == StatusCode::UNAUTHORIZED {
+            response.headers_mut().insert(
+                axum::http::header::WWW_AUTHENTICATE,
+                HeaderValue::from_static("Bearer"),
+            );
+        }
+        response
     }
 }
 

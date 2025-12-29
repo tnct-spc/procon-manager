@@ -29,7 +29,7 @@ pub struct ApiDoc;
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = AccessTokenResponse),
-        (status = 400, description = "Invalid credentials", body = ErrorResponse),
+        (status = 401, description = "Invalid credentials", body = ErrorResponse),
     ),
     tag = "auth"
 )]
