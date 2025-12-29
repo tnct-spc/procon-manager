@@ -94,6 +94,49 @@ async fn update_user_email_200(
 
 #[rstest]
 #[tokio::test]
+async fn update_user_email_409_duplicate(
+    mut fixture_auth: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    fixture_auth.expect_user_repository().returning(move || {
+        let mut mock = MockUserRepository::new();
+
+        mock.expect_find_current_user().returning(|id| {
+            Ok(Some(kernel::model::user::User {
+                id,
+                name: "dummy-user".into(),
+                email: "dummy@example.com".into(),
+                role: kernel::model::role::Role::User,
+            }))
+        });
+
+        mock.expect_update_email().returning(|_| {
+            Err(shared::error::AppError::Conflict(
+                "Email already exists.".into(),
+            ))
+        });
+
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture_auth);
+
+    let req = UpdateUserEmailRequest {
+        email: "duplicate@example.com".to_string(),
+    };
+
+    let req = Request::put(v1("/users/me/email"))
+        .bearer()
+        .application_json()
+        .body(Body::from(serde_json::to_string(&req)?))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::CONFLICT);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
 async fn update_user_name_400_empty_name(
     fixture: registry::MockAppRegistryExt,
 ) -> anyhow::Result<()> {
@@ -178,6 +221,51 @@ async fn register_user_200(mut fixture_auth: registry::MockAppRegistryExt) -> an
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::OK);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn register_user_409_duplicate_email(
+    mut fixture_auth: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    fixture_auth.expect_user_repository().returning(move || {
+        let mut mock = MockUserRepository::new();
+
+        mock.expect_find_current_user().returning(|id| {
+            Ok(Some(User {
+                id,
+                name: "admin-user".into(),
+                email: "admin@example.com".into(),
+                role: Role::Admin,
+            }))
+        });
+
+        mock.expect_create().returning(|_event| {
+            Err(shared::error::AppError::Conflict(
+                "Email already exists.".into(),
+            ))
+        });
+
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture_auth);
+
+    let req = CreateUserRequest {
+        name: "New User".to_string(),
+        email: "existing@example.com".to_string(),
+        password: "password123".to_string(),
+    };
+
+    let req = Request::post(v1("/users"))
+        .bearer()
+        .application_json()
+        .body(Body::from(serde_json::to_string(&req)?))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::CONFLICT);
 
     Ok(())
 }

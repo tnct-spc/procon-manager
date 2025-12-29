@@ -67,6 +67,7 @@ pub struct ApiDoc;
         (status = 400, description = "Invalid request body", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
+        (status = 409, description = "Email already exists", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"
@@ -288,6 +289,7 @@ pub async fn change_name(
         (status = 200, description = "Email updated successfully"),
         (status = 400, description = "Invalid request body", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 409, description = "Email already exists", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "users"

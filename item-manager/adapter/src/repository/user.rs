@@ -87,7 +87,7 @@ impl UserRepository for UserRepositoryImpl {
         )
         .execute(self.db.inner_ref())
         .await
-        .map_err(AppError::SpecificOperationError)?;
+        .map_err(map_sqlx_error)?;
         if res.rows_affected() < 1 {
             return Err(AppError::NoRowsAffectedError(
                 "No user has been created".into(),
@@ -181,7 +181,7 @@ impl UserRepository for UserRepositoryImpl {
         )
         .execute(self.db.inner_ref())
         .await
-        .map_err(AppError::SpecificOperationError)?;
+        .map_err(map_sqlx_error)?;
         if res.rows_affected() < 1 {
             return Err(AppError::EntityNotFound("Specified user not found".into()));
         }
@@ -216,6 +216,19 @@ fn verify_password(password: &str, hash: &str) -> AppResult<()> {
         return Err(AppError::UnauthenticatedError);
     }
     Ok(())
+}
+
+fn map_sqlx_error(err: sqlx::Error) -> AppError {
+    match &err {
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            let message = match db_err.constraint() {
+                Some("users_email_key") => "Email already exists.",
+                _ => "Unique constraint violation.",
+            };
+            AppError::Conflict(message.into())
+        }
+        _ => AppError::SpecificOperationError(err),
+    }
 }
 
 #[cfg(test)]
