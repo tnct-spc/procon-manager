@@ -65,7 +65,22 @@ impl UserRepository for UserRepositoryImpl {
         .await
         .map_err(AppError::SpecificOperationError)?
         .into_iter()
-        .filter_map(|row| User::try_from(row).ok())
+        .filter_map(|row| {
+            let user_id = row.user_id;
+            let role_name = row.role_name.clone();
+            match User::try_from(row) {
+                Ok(user) => Some(user),
+                Err(err) => {
+                    tracing::warn!(
+                        user_id = %user_id,
+                        role_name = %role_name,
+                        error.message = %err,
+                        "Failed to convert user row; skipping"
+                    );
+                    None
+                }
+            }
+        })
         .collect();
         Ok(users)
     }
