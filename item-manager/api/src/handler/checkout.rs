@@ -19,8 +19,8 @@ use crate::{
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        checkout_book,
-        return_book,
+        checkout_item,
+        return_item,
         show_checked_out_list,
         checkout_history
     ),
@@ -51,7 +51,7 @@ pub struct ApiDoc;
     security(("jwt" = [])),
     tag = "checkouts"
 )]
-pub async fn checkout_book(
+pub async fn checkout_item(
     user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
@@ -84,7 +84,7 @@ pub async fn checkout_book(
     security(("jwt" = [])),
     tag = "checkouts"
 )]
-pub async fn return_book(
+pub async fn return_item(
     user: AuthorizedUser,
     Path((item_id, checkout_id)): Path<(ItemId, CheckoutId)>,
     State(registry): State<AppRegistry>,

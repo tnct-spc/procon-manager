@@ -43,12 +43,3 @@ impl From<Checkout> for CheckoutResponse {
         }
     }
 }
-
-#[derive(Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CheckoutBookResponse {
-    pub id: ItemId,
-    pub title: String,
-    pub author: String,
-    pub isbn: String,
-}

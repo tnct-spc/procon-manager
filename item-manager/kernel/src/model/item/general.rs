@@ -7,12 +7,3 @@ pub struct GeneralItem {
     pub description: String,
     pub checkout: Option<SimpleCheckout>,
 }
-
-#[derive(Debug, Clone)]
-pub struct CreateGeneralItem {}
-
-#[derive(Debug, Clone)]
-pub struct UpdateGeneralItem {}
-
-#[derive(Debug)]
-pub struct DeleteGeneralItem {}
