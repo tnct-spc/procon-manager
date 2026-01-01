@@ -16,7 +16,7 @@ const login = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   try {
-    const { data, error } = await client.POST('/auth/login', {
+    const { data, error, response } = await client.POST('/auth/login', {
       body: {
         email: email.value,
         password: password.value,
@@ -24,7 +24,7 @@ const login = async () => {
     })
 
     if (error) {
-      throw new Error('Invalid credentials')
+      throw { response, error }
     }
 
     if (!data) {

@@ -22,10 +22,10 @@ const fetchUsers = async () => {
   try {
     store.loading = true
     error.value = null
-    const { data, error: apiError } = await client.GET('/api/v1/users')
+    const { data, error: apiError, response } = await client.GET('/api/v1/users')
 
     if (apiError || !data) {
-      throw new Error('Failed to fetch users')
+      throw { response, error: apiError }
     }
 
     users.value = data.items
@@ -45,13 +45,13 @@ const promoteToAdmin = async (userId: string) => {
     isUpdating.value = true
     const roleUpdateData: UpdateUserRoleRequest = { role: 'Admin' }
 
-    const { error } = await client.PUT('/api/v1/users/{user_id}/role', {
+    const { error, response } = await client.PUT('/api/v1/users/{user_id}/role', {
       params: { path: { user_id: userId } },
       body: roleUpdateData,
     })
 
     if (error) {
-      throw new Error('Failed to promote user to admin')
+      throw { response, error }
     }
 
     await fetchUsers()
@@ -70,13 +70,13 @@ const demoteToUser = async (userId: string) => {
     isUpdating.value = true
     const roleUpdateData: UpdateUserRoleRequest = { role: 'User' }
 
-    const { error } = await client.PUT('/api/v1/users/{user_id}/role', {
+    const { error, response } = await client.PUT('/api/v1/users/{user_id}/role', {
       params: { path: { user_id: userId } },
       body: roleUpdateData,
     })
 
     if (error) {
-      throw new Error('Failed to demote user')
+      throw { response, error }
     }
 
     await fetchUsers()
@@ -93,12 +93,12 @@ const deleteUser = async (userId: string) => {
 
   try {
     isUpdating.value = true
-    const { error } = await client.DELETE('/api/v1/users/{user_id}', {
+    const { error, response } = await client.DELETE('/api/v1/users/{user_id}', {
       params: { path: { user_id: userId } },
     })
 
     if (error) {
-      throw new Error('Failed to delete user')
+      throw { response, error }
     }
 
     await fetchUsers()
@@ -115,12 +115,12 @@ const createUser = async () => {
     isCreating.value = true
     addUserError.value = null
 
-    const { error } = await client.POST('/api/v1/users', {
+    const { error, response } = await client.POST('/api/v1/users', {
       body: newUser.value,
     })
 
     if (error) {
-      throw new Error('Failed to create user')
+      throw { response, error }
     }
 
     await fetchUsers()

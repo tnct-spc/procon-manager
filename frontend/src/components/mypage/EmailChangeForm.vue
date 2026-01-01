@@ -40,14 +40,14 @@ const handleSubmit = async () => {
   success.value = false
 
   try {
-    const { error } = await client.PUT('/api/v1/users/me/email', {
+    const { error, response } = await client.PUT('/api/v1/users/me/email', {
       body: {
         email: formData.value.email.trim(),
       },
     })
 
     if (error) {
-      throw new Error('Failed to change email')
+      throw { response, error }
     }
 
     success.value = true

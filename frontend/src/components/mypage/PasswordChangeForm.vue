@@ -45,7 +45,7 @@ const handleSubmit = async () => {
   success.value = false
 
   try {
-    const { error } = await client.PUT('/api/v1/users/me/password', {
+    const { error, response } = await client.PUT('/api/v1/users/me/password', {
       body: {
         currentPassword: formData.value.currentPassword,
         newPassword: formData.value.newPassword,
@@ -53,7 +53,7 @@ const handleSubmit = async () => {
     })
 
     if (error) {
-      throw new Error('Failed to change password')
+      throw { response, error }
     }
 
     success.value = true

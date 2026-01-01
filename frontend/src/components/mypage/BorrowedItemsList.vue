@@ -16,10 +16,10 @@ const fetchBorrowedItems = async () => {
   error.value = ''
 
   try {
-    const { data, error } = await client.GET('/api/v1/users/me/checkouts')
+    const { data, error, response } = await client.GET('/api/v1/users/me/checkouts')
 
     if (error || !data) {
-      throw new Error('Failed to fetch borrowed items')
+      throw { response, error }
     }
 
     // APIから返されるCheckoutのデータから、itemIdを使って詳細なアイテム情報を取得
@@ -27,12 +27,16 @@ const fetchBorrowedItems = async () => {
 
     // 各チェックアウトのアイテム詳細を取得
     const itemPromises = checkouts.map(async (checkout: CheckoutResponse) => {
-      const { data: itemData, error: itemError } = await client.GET('/api/v1/items/{item_id}', {
+      const {
+        data: itemData,
+        error: itemError,
+        response: itemResponse,
+      } = await client.GET('/api/v1/items/{item_id}', {
         params: { path: { item_id: checkout.itemId } },
       })
 
       if (itemError || !itemData) {
-        throw new Error(`Failed to fetch item ${checkout.itemId}`)
+        throw { response: itemResponse, error: itemError }
       }
 
       // アイテムにチェックアウト情報を追加

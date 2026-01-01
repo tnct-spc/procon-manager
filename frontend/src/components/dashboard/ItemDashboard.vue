@@ -2,7 +2,7 @@
 import { onMounted, ref, onBeforeUnmount } from 'vue'
 import { useAppStore } from '../../stores/counter'
 import type { Item } from '../../types/api'
-import type { ApiError } from '../../types/error'
+import { getErrorMessage, type ApiError } from '../../types/error'
 import AddButton from '../ui/AddButton.vue'
 import CreateItemForm from './CreateItemForm.vue'
 import EditItemForm from './EditItemForm.vue'
@@ -17,11 +17,13 @@ const handleCheckout = async (item: Item) => {
     console.error('チェックアウトエラー:', error)
     const apiError = error as ApiError
     if (apiError.response?.status === 404) {
-      alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
+      alert('アイテムが見つかりません。')
     } else if (apiError.response?.status === 409) {
       alert('このアイテムは既にチェックアウトされています。')
+    } else if (apiError.response?.status === 401) {
+      alert('ログインが必要です。')
     } else {
-      alert(`チェックアウトに失敗しました: ${apiError.message || 'サーバーエラー'}`)
+      alert(`チェックアウトに失敗しました: ${getErrorMessage(error)}`)
     }
   }
 }
@@ -34,9 +36,13 @@ const handleReturn = async (item: Item) => {
       console.error('返却エラー:', error)
       const apiError = error as ApiError
       if (apiError.response?.status === 404) {
-        alert('サーバーに接続できません。バックエンドAPIが起動していることを確認してください。')
+        alert('アイテムまたはチェックアウトが見つかりません。')
+      } else if (apiError.response?.status === 403) {
+        alert('返却する権限がありません。')
+      } else if (apiError.response?.status === 401) {
+        alert('ログインが必要です。')
       } else {
-        alert(`返却に失敗しました: ${apiError.message || 'サーバーエラー'}`)
+        alert(`返却に失敗しました: ${getErrorMessage(error)}`)
       }
     }
   }

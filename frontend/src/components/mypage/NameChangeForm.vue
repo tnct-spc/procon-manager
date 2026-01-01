@@ -31,14 +31,14 @@ const handleSubmit = async () => {
   success.value = false
 
   try {
-    const { error } = await client.PUT('/api/v1/users/me/name', {
+    const { error, response } = await client.PUT('/api/v1/users/me/name', {
       body: {
         name: formData.value.name.trim(),
       },
     })
 
     if (error) {
-      throw new Error('Failed to change name')
+      throw { response, error }
     }
 
     success.value = true

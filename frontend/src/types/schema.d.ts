@@ -4,26 +4,6 @@
  */
 
 export interface paths {
-  '/api/v1/checkouts': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List all currently checked out items
-     * @description Get a list of all items that are currently checked out
-     */
-    get: operations['show_checked_out_list']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/api/v1/health': {
     parameters: {
       query?: never
@@ -76,6 +56,26 @@ export interface paths {
      * @description Create a new item with the provided details. The item category (general, book, or laptop) determines the required fields.
      */
     post: operations['create_item']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/v1/items/checkouts': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List all currently checked out items
+     * @description Get a list of all items that are currently checked out
+     */
+    get: operations['show_checked_out_list']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -143,7 +143,7 @@ export interface paths {
      * Checkout an item
      * @description Create a new checkout record for an item
      */
-    post: operations['checkout_book']
+    post: operations['checkout_item']
     delete?: never
     options?: never
     head?: never
@@ -162,7 +162,7 @@ export interface paths {
      * Return a checked out item
      * @description Mark a checked out item as returned
      */
-    put: operations['return_book']
+    put: operations['return_item']
     post?: never
     delete?: never
     options?: never
@@ -418,6 +418,9 @@ export interface components {
       name: string
       password: string
     }
+    ErrorResponse: {
+      message: string
+    }
     GeneralItemResponse: {
       checkout?: null | components['schemas']['ItemCheckoutResponse']
       description: string
@@ -534,33 +537,6 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
-  show_checked_out_list: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CheckoutsResponse']
-        }
-      }
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-    }
-  }
   health_check: {
     parameters: {
       query?: never
@@ -632,7 +608,9 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -661,14 +639,47 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+  show_checked_out_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CheckoutsResponse']
+        }
+      }
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -698,14 +709,18 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -737,21 +752,27 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -779,14 +800,18 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -816,18 +841,22 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
-  checkout_book: {
+  checkout_item: {
     parameters: {
       query?: never
       header?: never
@@ -851,25 +880,31 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item already checked out */
       409: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
-  return_book: {
+  return_item: {
     parameters: {
       query?: never
       header?: never
@@ -895,14 +930,27 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Item or checkout record not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -929,7 +977,18 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Forbidden - Admin access required */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -960,21 +1019,36 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Forbidden - Admin access required */
       403: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Email already exists */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1001,7 +1075,9 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1028,7 +1104,9 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1057,14 +1135,27 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Email already exists */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1093,14 +1184,18 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1129,21 +1224,27 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Invalid current password */
       403: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1171,21 +1272,27 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Forbidden - Admin access required */
       403: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description User not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1217,28 +1324,36 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Unauthorized */
       401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description Forbidden - Admin access required */
       403: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
       /** @description User not found */
       404: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
@@ -1265,11 +1380,13 @@ export interface operations {
         }
       }
       /** @description Invalid credentials */
-      400: {
+      401: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
       }
     }
   }
