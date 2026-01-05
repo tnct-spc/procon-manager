@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAppStore } from '../../stores/counter'
-import type { CreateItemRequest, Item } from '../../types/api'
+import type { Item, UpdateItemRequest } from '../../types/api'
 import { getErrorMessage } from '../../types/error'
 
 interface Props {
@@ -38,7 +38,7 @@ const handleSubmit = async () => {
   error.value = null
 
   try {
-    const requestData: CreateItemRequest = (() => {
+    const requestData: UpdateItemRequest = (() => {
       switch (formData.value.category) {
         case 'book':
           return {

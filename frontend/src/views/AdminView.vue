@@ -29,7 +29,6 @@ const fetchUsers = async () => {
     }
 
     users.value = data.items
-    console.log('ユーザー一覧:', users.value)
   } catch (err: unknown) {
     error.value = getErrorMessage(err)
     console.error('ユーザー一覧の取得に失敗:', err)

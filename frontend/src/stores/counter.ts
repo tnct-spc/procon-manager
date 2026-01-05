@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import client from '../services/api'
-import type { User, Item, CreateItemRequest } from '../types/api'
+import type { User, Item, CreateItemRequest, UpdateItemRequest } from '../types/api'
 import { getErrorMessage } from '../types/error'
 
 export const useAppStore = defineStore('app', () => {
@@ -36,7 +36,6 @@ export const useAppStore = defineStore('app', () => {
       items.value = data.items
       totalItems.value = data.total
       currentPage.value = page
-      console.log('Fetched items:', items.value)
     } catch (err: unknown) {
       error.value = getErrorMessage(err)
       console.error('API error:', err)
@@ -49,7 +48,6 @@ export const useAppStore = defineStore('app', () => {
     loading.value = true
     error.value = null
     try {
-      console.log('Creating item with data:', itemData)
       const { error, response } = await client.POST('/api/v1/items', {
         body: itemData,
       })
@@ -121,7 +119,7 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const updateItem = async (itemId: string, itemData: CreateItemRequest) => {
+  const updateItem = async (itemId: string, itemData: UpdateItemRequest) => {
     loading.value = true
     error.value = null
     try {
