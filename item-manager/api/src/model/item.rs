@@ -18,30 +18,38 @@ use super::user::CheckoutUser;
 pub enum CreateItemRequest {
     #[serde(rename = "general")]
     General {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
     #[serde(rename = "book")]
     Book {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         author: String,
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         isbn: String,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
     #[serde(rename = "laptop")]
     Laptop {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
         #[garde(skip)]
         #[schema(value_type = String, example = "00:00:00:00:00:00")]
         mac_address: MacAddress,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
 }
@@ -83,30 +91,38 @@ impl From<CreateItemRequest> for CreateItem {
 pub enum UpdateItemRequest {
     #[serde(rename = "general")]
     General {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
     #[serde(rename = "book")]
     Book {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         author: String,
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         isbn: String,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
     #[serde(rename = "laptop")]
     Laptop {
-        #[garde(length(min = 1))]
+        #[garde(length(min = 1, max = 255))]
+        #[schema(max_length = 255)]
         name: String,
         #[garde(skip)]
         #[schema(value_type = String, example = "00:00:00:00:00:00")]
         mac_address: MacAddress,
-        #[garde(skip)]
+        #[garde(length(max = 1024))]
+        #[schema(max_length = 1024)]
         description: String,
     },
 }

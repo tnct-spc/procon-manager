@@ -87,9 +87,12 @@ impl From<UpdateUserPasswordRequestWithUserId> for UpdateUserPassword {
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
-    #[garde(length(min = 1))]
+    #[garde(length(min = 1, max = 255))]
+    #[schema(max_length = 255)]
     pub name: String,
     #[garde(email)]
+    #[garde(length(max = 255))]
+    #[schema(max_length = 255)]
     pub email: String,
     #[garde(length(min = 1))]
     pub password: String,
@@ -125,7 +128,8 @@ impl From<UpdateUserRoleRequestWithUserId> for UpdateUserRole {
 #[derive(Serialize, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserNameRequest {
-    #[garde(length(min = 1))]
+    #[garde(length(min = 1, max = 255))]
+    #[schema(max_length = 255)]
     pub name: String,
 }
 
@@ -144,6 +148,8 @@ impl From<UpdateUserNameRequestWithUserId> for UpdateUserName {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserEmailRequest {
     #[garde(email)]
+    #[garde(length(max = 255))]
+    #[schema(max_length = 255)]
     pub email: String,
 }
 
