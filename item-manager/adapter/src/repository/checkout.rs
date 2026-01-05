@@ -78,7 +78,7 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
         )
         .execute(&mut *tx)
         .await
-        .map_err(AppError::SpecificOperationError)?;
+        .map_err(|err| map_sqlx_error_on_create(err, event.item_id))?;
 
         if res.rows_affected() < 1 {
             return Err(AppError::NoRowsAffectedError(
@@ -253,6 +253,21 @@ impl CheckoutRepository for CheckoutRepositoryImpl {
         }
 
         Ok(checkout_histories)
+    }
+}
+
+fn map_sqlx_error_on_create(err: sqlx::Error, item_id: ItemId) -> AppError {
+    match &err {
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            let message = match db_err.constraint() {
+                Some("checkouts_item_id_key") => {
+                    format!("The item ({}) has already been checked out.", item_id)
+                }
+                _ => "Unique constraint violation.".to_string(),
+            };
+            AppError::Conflict(message)
+        }
+        _ => AppError::SpecificOperationError(err),
     }
 }
 
