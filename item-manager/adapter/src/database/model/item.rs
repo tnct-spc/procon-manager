@@ -4,6 +4,7 @@ use kernel::model::{
     item::{Item, book, general, laptop},
     user::CheckoutUser,
 };
+use shared::error::{AppError, AppResult};
 
 pub struct ItemRow {
     pub item_id: ItemId,
@@ -16,38 +17,42 @@ pub struct ItemRow {
 }
 
 impl ItemRow {
-    pub fn into_item(self, checkout: Option<SimpleCheckout>) -> Item {
+    pub fn into_item(self, checkout: Option<SimpleCheckout>) -> AppResult<Item> {
         match self.category.as_str() {
-            "general" => Item::General(general::GeneralItem {
+            "general" => Ok(Item::General(general::GeneralItem {
                 id: self.item_id,
                 name: self.name,
                 description: self.description,
                 checkout,
-            }),
-            "book" => Item::Book(book::Book {
+            })),
+            "book" => Ok(Item::Book(book::Book {
                 id: self.item_id,
                 name: self.name,
-                author: self.author.unwrap_or_default(),
-                isbn: self.isbn.unwrap_or_default(),
+                author: self.author.ok_or_else(|| {
+                    AppError::ConversionEntityError("Book item is missing author".into())
+                })?,
+                isbn: self.isbn.ok_or_else(|| {
+                    AppError::ConversionEntityError("Book item is missing ISBN".into())
+                })?,
                 description: self.description,
                 checkout,
-            }),
-            "laptop" => Item::Laptop(laptop::Laptop {
+            })),
+            "laptop" => Ok(Item::Laptop(laptop::Laptop {
                 id: self.item_id,
                 name: self.name,
-                mac_address: self.mac_address.unwrap_or_default(),
+                mac_address: self.mac_address.ok_or_else(|| {
+                    AppError::ConversionEntityError("Laptop item is missing MAC address".into())
+                })?,
                 description: self.description,
                 checkout,
-            }),
+            })),
             _ => unreachable!("Invalid item category"),
         }
     }
 }
 
 pub struct PaginatedItemRow {
-    pub total: i64,
     pub id: ItemId,
-    pub category: String,
 }
 
 pub struct ItemCheckoutRow {

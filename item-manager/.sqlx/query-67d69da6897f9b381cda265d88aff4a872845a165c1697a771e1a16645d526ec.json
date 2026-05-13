@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT\n                    i.item_id AS id\n                FROM items AS i\n                WHERE $3::text IS NULL OR i.category = $3\n                ORDER BY i.created_at DESC\n                LIMIT $1\n                OFFSET $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "67d69da6897f9b381cda265d88aff4a872845a165c1697a771e1a16645d526ec"
+}

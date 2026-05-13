@@ -96,13 +96,23 @@ impl ItemRepository for ItemRepositoryImpl {
         } = options;
         let category_param = category.map(|value| value.as_ref().to_string());
 
+        let total = sqlx::query_scalar!(
+            r#"
+                SELECT COUNT(*) AS "total!"
+                FROM items AS i
+                WHERE $1::text IS NULL OR i.category = $1
+            "#,
+            category_param.as_deref()
+        )
+        .fetch_one(self.db.inner_ref())
+        .await
+        .map_err(AppError::SpecificOperationError)?;
+
         let rows: Vec<PaginatedItemRow> = sqlx::query_as!(
             PaginatedItemRow,
             r#"
                 SELECT
-                    COUNT(*) OVER() AS "total!",
-                    i.item_id AS id,
-                    i.category AS category
+                    i.item_id AS id
                 FROM items AS i
                 WHERE $3::text IS NULL OR i.category = $3
                 ORDER BY i.created_at DESC
@@ -111,13 +121,12 @@ impl ItemRepository for ItemRepositoryImpl {
             "#,
             limit,
             offset,
-            category_param
+            category_param.as_deref()
         )
         .fetch_all(self.db.inner_ref())
         .await
         .map_err(AppError::SpecificOperationError)?;
 
-        let total = rows.first().map(|row| row.total).unwrap_or(0);
         let item_ids = rows.into_iter().map(|row| row.id).collect::<Vec<ItemId>>();
         let mut checkouts = self.find_checkouts(&item_ids).await?;
 
@@ -150,7 +159,7 @@ impl ItemRepository for ItemRepositoryImpl {
                 let checkout = checkouts.remove(&row.item_id);
                 row.into_item(checkout)
             })
-            .collect();
+            .collect::<AppResult<Vec<_>>>()?;
 
         Ok(PaginatedList {
             total,
@@ -187,7 +196,7 @@ impl ItemRepository for ItemRepositoryImpl {
         match row {
             Some(row) => {
                 let checkout = self.find_checkouts(&[item_id]).await?.remove(&item_id);
-                Ok(Some(row.into_item(checkout)))
+                row.into_item(checkout).map(Some)
             }
             None => Ok(None),
         }
@@ -284,6 +293,10 @@ impl ItemRepository for ItemRepositoryImpl {
         .await
         .map_err(AppError::SpecificOperationError)?;
 
+        if res.rows_affected() < 1 {
+            return Err(AppError::EntityNotFound("specified item not found".into()));
+        }
+
         // Insert new category data if needed
         match &event {
             UpdateItem::Book { author, isbn, .. } => {
@@ -351,10 +364,6 @@ impl ItemRepository for ItemRepositoryImpl {
         }
 
         tx.commit().await.map_err(AppError::TransactionError)?;
-
-        if res.rows_affected() < 1 {
-            return Err(AppError::EntityNotFound("specified item not found".into()));
-        }
 
         Ok(())
     }
@@ -768,8 +777,32 @@ mod tests {
                 category: None,
             })
             .await?;
-        assert_eq!(res.total, 0);
+        assert_eq!(res.total, 50);
         assert_eq!(res.items.len(), 0);
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_missing_category_details_are_rejected(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = ItemRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let item_id = ItemId::new();
+
+        sqlx::query(
+            r#"
+                INSERT INTO items (item_id, name, description, category)
+                VALUES ($1, $2, $3, $4)
+            "#,
+        )
+        .bind(item_id.raw())
+        .bind("Broken Book")
+        .bind("Missing book details")
+        .bind(ItemCategory::Book.as_ref())
+        .execute(&pool)
+        .await?;
+
+        let result = repo.find_by_id(item_id).await;
+        assert!(matches!(result, Err(AppError::ConversionEntityError(_))));
 
         Ok(())
     }
