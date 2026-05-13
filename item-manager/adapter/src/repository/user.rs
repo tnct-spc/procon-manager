@@ -1,4 +1,3 @@
-use crate::database::{ConnectionPool, model::user::UserRow};
 use async_trait::async_trait;
 use derive_new::new;
 use kernel::model::id::UserId;
@@ -11,6 +10,8 @@ use kernel::model::user::{
 };
 use kernel::repository::user::UserRepository;
 use shared::error::{AppError, AppResult};
+
+use crate::database::{ConnectionPool, model::user::UserRow};
 
 #[derive(new)]
 pub struct UserRepositoryImpl {
@@ -65,23 +66,8 @@ impl UserRepository for UserRepositoryImpl {
         .await
         .map_err(AppError::SpecificOperationError)?
         .into_iter()
-        .filter_map(|row| {
-            let user_id = row.user_id;
-            let role_name = row.role_name.clone();
-            match User::try_from(row) {
-                Ok(user) => Some(user),
-                Err(err) => {
-                    tracing::warn!(
-                        user_id = %user_id,
-                        role_name = %role_name,
-                        error.message = %err,
-                        "Failed to convert user row; skipping"
-                    );
-                    None
-                }
-            }
-        })
-        .collect();
+        .map(User::try_from)
+        .collect::<AppResult<Vec<_>>>()?;
         Ok(users)
     }
 
@@ -394,6 +380,35 @@ mod tests {
             })
             .await;
         assert!(result.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common"))]
+    async fn test_find_all_rejects_invalid_role(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let repo = UserRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let user_id = UserId::new();
+
+        sqlx::query("INSERT INTO roles(name) VALUES ($1)")
+            .bind("Unknown")
+            .execute(&pool)
+            .await?;
+        sqlx::query(
+            r#"
+                INSERT INTO users(user_id, name, email, password_hash, role_id)
+                SELECT $1, $2, $3, $4, role_id FROM roles WHERE name = $5
+            "#,
+        )
+        .bind(user_id.raw())
+        .bind("Invalid Role User")
+        .bind("invalid-role@example.com")
+        .bind("password-hash")
+        .bind("Unknown")
+        .execute(&pool)
+        .await?;
+
+        let result = repo.find_all().await;
+        assert!(matches!(result, Err(AppError::ConversionEntityError(_))));
 
         Ok(())
     }
