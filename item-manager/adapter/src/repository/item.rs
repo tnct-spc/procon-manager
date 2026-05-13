@@ -378,13 +378,24 @@ impl ItemRepository for ItemRepositoryImpl {
         )
         .execute(self.db.inner_ref())
         .await
-        .map_err(AppError::SpecificOperationError)?;
+        .map_err(map_sqlx_error_on_delete)?;
 
         if res.rows_affected() < 1 {
             return Err(AppError::EntityNotFound("specified item not found".into()));
         }
 
         Ok(())
+    }
+}
+
+fn map_sqlx_error_on_delete(err: sqlx::Error) -> AppError {
+    match &err {
+        sqlx::Error::Database(db_err)
+            if matches!(db_err.code().as_deref(), Some("23001" | "23503")) =>
+        {
+            AppError::Conflict("Cannot delete item because checkout history references it.".into())
+        }
+        _ => AppError::SpecificOperationError(err),
     }
 }
 
@@ -986,6 +997,9 @@ mod tests {
             };
             assert!(checkout.is_none());
         }
+
+        let delete_result = item_repo.delete(DeleteItem { item_id }).await;
+        assert!(matches!(delete_result, Err(AppError::Conflict(_))));
 
         Ok(())
     }

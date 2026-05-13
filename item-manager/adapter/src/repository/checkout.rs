@@ -300,8 +300,10 @@ mod tests {
     use std::str::FromStr;
 
     use chrono::Utc;
+    use kernel::{model::user::event::DeleteUser, repository::user::UserRepository};
 
     use super::*;
+    use crate::repository::user::UserRepositoryImpl;
 
     #[sqlx::test(fixtures("common", "item"))]
     async fn test_checkout_flow(pool: sqlx::PgPool) -> anyhow::Result<()> {
@@ -354,6 +356,43 @@ mod tests {
         // Verify no unreturned checkouts exist
         let unreturned = repo.find_unreturned_by_user_id(user_id).await?;
         assert_eq!(unreturned.len(), 0);
+
+        Ok(())
+    }
+
+    #[sqlx::test(fixtures("common", "item"))]
+    async fn test_checkout_history_prevents_user_deletion(
+        pool: sqlx::PgPool,
+    ) -> anyhow::Result<()> {
+        let checkout_repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool.clone()));
+        let user_repo = UserRepositoryImpl::new(ConnectionPool::new(pool));
+        let item_id = ItemId::from_str("9890736e-a4e4-461a-a77d-eac3517ef113")?;
+        let user_id = UserId::from_str("9582f9de-0fd1-4892-b20c-70139a7eb95b")?;
+
+        checkout_repo
+            .create(CreateCheckout {
+                item_id,
+                checked_out_by: user_id,
+                checked_out_at: Utc::now(),
+            })
+            .await?;
+
+        let unreturned = checkout_repo.find_unreturned_by_user_id(user_id).await?;
+        checkout_repo
+            .update_returned(UpdateReturned {
+                checkout_id: unreturned[0].id,
+                item_id,
+                returned_by: user_id,
+                returned_by_role: Role::User,
+                returned_at: Utc::now(),
+            })
+            .await?;
+
+        let delete_result = user_repo.delete(DeleteUser { user_id }).await;
+        assert!(
+            matches!(delete_result, Err(AppError::Conflict(_))),
+            "{delete_result:?}"
+        );
 
         Ok(())
     }
