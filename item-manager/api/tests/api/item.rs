@@ -91,14 +91,14 @@ async fn list_items_400(
 
 #[rstest]
 #[tokio::test]
-async fn create_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
-    fixture.expect_item_repository().returning(move || {
+async fn create_item_201(mut fixture_admin: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    fixture_admin.expect_item_repository().returning(move || {
         let mut mock = MockItemRepository::new();
         mock.expect_create().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
-    let app = make_router(fixture);
+    let app = make_router(fixture_admin);
 
     let req = CreateItemRequest::Book {
         name: "Test Book".into(),
@@ -119,18 +119,41 @@ async fn create_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
 }
 
 #[rstest]
+#[tokio::test]
+async fn create_item_403_not_admin(fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    let app = make_router(fixture);
+
+    let req = CreateItemRequest::Book {
+        name: "Test Book".into(),
+        author: "Test Author".into(),
+        isbn: "1234567890123".into(),
+        description: "Test Description".into(),
+    };
+
+    let req = Request::post(v1("/items"))
+        .bearer()
+        .application_json()
+        .body(Body::from(serde_json::to_string(&req)?))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
+
+    Ok(())
+}
+
+#[rstest]
 #[case("", "Test Author", "1234567890123", "Test Description")] // name empty
 #[case("Test Book", "", "1234567890123", "Test Description")] // author empty
 #[case("Test Book", "Test Author", "", "Test Description")] // ISBN empty
 #[tokio::test]
 async fn create_item_400(
-    fixture: registry::MockAppRegistryExt,
+    fixture_admin: registry::MockAppRegistryExt,
     #[case] name: &str,
     #[case] author: &str,
     #[case] isbn: &str,
     #[case] description: &str,
 ) -> anyhow::Result<()> {
-    let app = make_router(fixture);
+    let app = make_router(fixture_admin);
 
     let req = CreateItemRequest::Book {
         name: name.into(),
@@ -215,15 +238,15 @@ async fn get_item_404(mut fixture: registry::MockAppRegistryExt) -> anyhow::Resu
 
 #[rstest]
 #[tokio::test]
-async fn update_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn update_item_200(mut fixture_admin: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_item_repository().returning(move || {
+    fixture_admin.expect_item_repository().returning(move || {
         let mut mock = MockItemRepository::new();
         mock.expect_update().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
-    let app = make_router(fixture);
+    let app = make_router(fixture_admin);
 
     let req = UpdateItemRequest::Book {
         name: "Updated Title".into(),
@@ -244,19 +267,43 @@ async fn update_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
 }
 
 #[rstest]
+#[tokio::test]
+async fn update_item_403_not_admin(fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let app = make_router(fixture);
+
+    let req = UpdateItemRequest::Book {
+        name: "Updated Title".into(),
+        author: "Updated Author".into(),
+        isbn: "1234567890123".into(),
+        description: "Updated Description".into(),
+    };
+
+    let req = Request::put(v1(&format!("/items/{item_id}")))
+        .bearer()
+        .application_json()
+        .body(Body::from(serde_json::to_string(&req)?))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
+
+    Ok(())
+}
+
+#[rstest]
 #[case("", "Test Author", "1234567890123", "Test Description")] // name empty
 #[case("Test Book", "", "1234567890123", "Test Description")] // author empty
 #[case("Test Book", "Test Author", "", "Test Description")] // ISBN empty
 #[tokio::test]
 async fn update_item_400(
-    fixture: registry::MockAppRegistryExt,
+    fixture_admin: registry::MockAppRegistryExt,
     #[case] name: &str,
     #[case] author: &str,
     #[case] isbn: &str,
     #[case] description: &str,
 ) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    let app = make_router(fixture);
+    let app = make_router(fixture_admin);
 
     let req = UpdateItemRequest::Book {
         name: name.into(),
@@ -278,15 +325,15 @@ async fn update_item_400(
 
 #[rstest]
 #[tokio::test]
-async fn delete_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+async fn delete_item_200(mut fixture_admin: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
-    fixture.expect_item_repository().returning(move || {
+    fixture_admin.expect_item_repository().returning(move || {
         let mut mock = MockItemRepository::new();
         mock.expect_delete().returning(|_| Ok(()));
         Arc::new(mock)
     });
 
-    let app = make_router(fixture);
+    let app = make_router(fixture_admin);
 
     let req = Request::delete(v1(&format!("/items/{item_id}")))
         .bearer()
@@ -294,6 +341,22 @@ async fn delete_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::R
 
     let resp = app.oneshot(req).await?;
     assert_eq!(resp.status(), axum::http::StatusCode::OK);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn delete_item_403_not_admin(fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let app = make_router(fixture);
+
+    let req = Request::delete(v1(&format!("/items/{item_id}")))
+        .bearer()
+        .body(Body::empty())?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
 
     Ok(())
 }

@@ -47,6 +47,16 @@ use crate::{
 )]
 pub struct ApiDoc;
 
+fn ensure_admin(user: &AuthorizedUser) -> AppResult<()> {
+    if user.is_admin() {
+        Ok(())
+    } else {
+        Err(AppError::ForbiddenOperation(
+            "Admin access required.".into(),
+        ))
+    }
+}
+
 /// Create a new item
 ///
 /// Create a new item with the provided details. The item category (general, book, or laptop) determines the required fields.
@@ -58,15 +68,17 @@ pub struct ApiDoc;
         (status = 201, description = "Item created successfully"),
         (status = 400, description = "Invalid request body", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
 )]
 pub async fn create_item(
-    _user: AuthorizedUser,
+    user: AuthorizedUser,
     State(registry): State<AppRegistry>,
     Json(req): Json<CreateItemRequest>,
 ) -> Result<StatusCode, AppError> {
+    ensure_admin(&user)?;
     req.validate()?;
 
     registry
@@ -155,17 +167,19 @@ pub async fn get_item(
         (status = 200, description = "Item updated successfully"),
         (status = 400, description = "Invalid request body", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
         (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
 )]
 pub async fn update_item(
-    _user: AuthorizedUser,
+    user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
     Json(req): Json<UpdateItemRequest>,
 ) -> AppResult<StatusCode> {
+    ensure_admin(&user)?;
     req.validate()?;
 
     registry
@@ -187,16 +201,18 @@ pub async fn update_item(
     responses(
         (status = 200, description = "Item deleted successfully"),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required", body = ErrorResponse),
         (status = 404, description = "Item not found", body = ErrorResponse),
     ),
     security(("jwt" = [])),
     tag = "items"
 )]
 pub async fn delete_item(
-    _user: AuthorizedUser,
+    user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
 ) -> AppResult<StatusCode> {
+    ensure_admin(&user)?;
     let delete_item = DeleteItem { item_id };
     registry
         .item_repository()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useAppStore } from '../../stores/counter'
 import type { Item } from '../../types/api'
 import { getErrorMessage, type ApiError } from '../../types/error'
@@ -9,6 +9,7 @@ import EditItemForm from './EditItemForm.vue'
 
 const store = useAppStore()
 const showCreateForm = ref(false)
+const isAdmin = computed(() => store.currentUser?.role === 'Admin')
 
 const handleCheckout = async (item: Item) => {
   try {
@@ -84,12 +85,16 @@ const toggleMenu = (itemId: string) => {
 }
 
 const editItem = (item: Item) => {
+  if (!isAdmin.value) return
+
   editingItem.value = item
   showEditForm.value = true
   showMenu.value = {}
 }
 
 const deleteItem = async (itemId: string) => {
+  if (!isAdmin.value) return
+
   if (!confirm('このアイテムを削除しますか？この操作は取り消せません。')) return
 
   try {
@@ -188,7 +193,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <div :class="$style.menuContainer" data-menu-container>
+          <div v-if="isAdmin" :class="$style.menuContainer" data-menu-container>
             <button
               @click="toggleMenu(item.id)"
               :class="$style.menuBtn"
@@ -258,6 +263,7 @@ onBeforeUnmount(() => {
     </div>
 
     <AddButton
+      v-if="isAdmin"
       @click="showCreateForm = true"
       :disabled="store.loading"
       label="新しいアイテムを追加"
