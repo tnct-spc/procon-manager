@@ -29,6 +29,16 @@ dependencies = ["before-build"]
 run_task = [{ name = ["fmt", "clippy", "test"] }]
 watch = true
 
+[tasks.check]
+args = ["check", "--workspace", "--all-targets"]
+command = "cargo"
+env = { SQLX_OFFLINE = "true" }
+
+[tasks.clippy]
+args = ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]
+command = "cargo"
+env = { SQLX_OFFLINE = "true" }
+
 [tasks.test]
 args = [
   "nextest",
