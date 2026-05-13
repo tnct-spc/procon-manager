@@ -74,6 +74,7 @@ async fn list_items_200(
 
 #[rstest]
 #[case("/items?limit=-1")]
+#[case("/items?limit=101")]
 #[case("/items?offset=aaa")]
 #[tokio::test]
 async fn list_items_400(

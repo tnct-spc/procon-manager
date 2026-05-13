@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 pub struct ListQuery {
-    #[garde(range(min = 0))]
+    #[garde(range(min = 0, max = 100))]
     #[serde(default = "default_limit")]
     pub limit: i64,
 
