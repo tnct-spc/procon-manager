@@ -92,7 +92,7 @@
               cargo-nextest
               sqlx-cli
               process-compose
-              nodePackages.serve
+              serve
             ];
 
             shellHook = ''
@@ -180,7 +180,7 @@
                   };
                 };
                 frontend-server = {
-                  command = "${pkgs.nodePackages.serve}/bin/serve -s frontend/dist -l 5173";
+                  command = "${pkgs.serve}/bin/serve -s frontend/dist -l 5173";
                 };
               };
             };
