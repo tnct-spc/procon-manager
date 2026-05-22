@@ -77,6 +77,52 @@ If you prefer to run services separately:
    pnpm dev
    ```
 
+## Initial Operation Setup
+
+1. **Create backend environment file**
+
+   ```bash
+   cp .env-item.example .env-item
+   ```
+
+   Edit `.env-item` for the deployment environment. At minimum, set `DATABASE_HOST` and `JWT_SECRET` appropriately.
+
+2. **Create frontend environment file**
+
+   ```bash
+   cd frontend
+   echo 'VITE_API_BASE_URL=https://api.example.com\n' > .env
+   ```
+
+   Replace `https://api.example.com` with the public backend base URL used by the frontend. Do not use `localhost` unless the browser that opens the frontend also runs the backend locally.
+
+3. **Install frontend dependencies and build**
+
+   ```bash
+   pnpm install
+   pnpm build
+   ```
+
+4. **Start the application services**
+
+   From the repository root:
+
+   ```bash
+   nix run .#app
+   ```
+
+5. **Run database migrations and initial setup**
+
+   In another terminal:
+
+   ```bash
+   cd item-manager
+   cargo make migrate
+   cargo make initial-setup
+   ```
+
+   If you use `makers` as an alias for `cargo make`, `makers migrate` and `makers initial-setup` are equivalent.
+
 ## API Usage
 
 The REST API is documented with OpenAPI 3.0. Access the interactive documentation at `/swagger-ui/` when the backend is running.
