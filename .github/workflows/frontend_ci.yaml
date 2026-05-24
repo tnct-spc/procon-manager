@@ -44,10 +44,13 @@ jobs:
         run: nix develop -c pnpm type-check
 
       - name: Lint check
-        run: nix develop -c pnpm lint
+        run: nix develop -c pnpm lint:check
 
       - name: Format check
-        run: nix develop -c prettier --check src/
+        run: nix develop -c pnpm format:check
+
+      - name: Audit dependencies
+        run: nix develop -c pnpm audit
 
       - name: Build application
         run: nix develop -c pnpm build

@@ -21,5 +21,11 @@ export default defineConfigWithVueTs(
 
   pluginVue.configs["flat/essential"],
   vueTsConfigs.recommended,
+  {
+    name: "app/security-rules",
+    rules: {
+      "vue/no-v-html": "error",
+    },
+  },
   skipFormatting,
 );

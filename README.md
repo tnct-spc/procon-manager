@@ -161,7 +161,24 @@ pnpm format      # Prettier formatting
 
 ```bash
 nix flake check -L              # Full CI checks
+cd frontend && pnpm audit       # Frontend dependency audit
+cd item-manager && cargo audit --ignore RUSTSEC-2023-0071  # Rust dependency audit
 ```
+
+## Production Security Notes
+
+Serve the frontend with a restrictive Content Security Policy. Start with
+`Content-Security-Policy-Report-Only`, fix reported violations, then enforce it.
+
+Example policy:
+
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.example.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+```
+
+Replace `https://api.example.com` with the production API origin. Keep rendering
+untrusted text through Vue interpolation (`{{ value }}`), and avoid `v-html`
+unless the value is sanitized first.
 
 ## Project Structure
 

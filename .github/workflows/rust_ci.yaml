@@ -59,3 +59,6 @@ jobs:
 
       - name: Check unused dependencies
         run: nix run nixpkgs#cargo-machete
+
+      - name: Audit dependencies
+        run: nix run nixpkgs#cargo-audit -- audit --ignore RUSTSEC-2023-0071

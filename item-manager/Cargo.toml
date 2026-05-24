@@ -27,7 +27,7 @@ mockall = "0.14.0"
 registry = { path = "./registry" }
 serde = { version = "1.0.217", features = ["derive"] }
 shared = { path = "./shared" }
-sqlx = { version = "0.8.6", features = [
+sqlx = { version = "0.8.6", default-features = false, features = [
   "runtime-tokio",
   "uuid",
   "chrono",
