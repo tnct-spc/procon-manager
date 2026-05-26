@@ -431,6 +431,68 @@ async fn checkout_item_201(mut fixture: registry::MockAppRegistryExt) -> anyhow:
 
 #[rstest]
 #[tokio::test]
+async fn checkout_item_as_admin_for_user_201(
+    mut fixture_admin: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let target_user_id = UserId::new();
+
+    fixture_admin
+        .expect_checkout_repository()
+        .returning(move || {
+            let mut mock = MockCheckoutRepository::new();
+            mock.expect_create().returning(move |event| {
+                assert_eq!(event.checked_out_by, target_user_id);
+                Ok(())
+            });
+            Arc::new(mock)
+        });
+
+    let app = make_router(fixture_admin);
+
+    let req = Request::post(v1(&format!("/items/{item_id}/checkouts")))
+        .bearer()
+        .application_json()
+        .body(Body::from(
+            serde_json::json!({ "checkedOutBy": target_user_id }).to_string(),
+        ))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::CREATED);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
+async fn checkout_item_for_other_user_fails_403(
+    mut fixture: registry::MockAppRegistryExt,
+) -> anyhow::Result<()> {
+    let item_id = ItemId::new();
+    let target_user_id = UserId::new();
+
+    fixture.expect_checkout_repository().returning(move || {
+        let mock = MockCheckoutRepository::new();
+        Arc::new(mock)
+    });
+
+    let app = make_router(fixture);
+
+    let req = Request::post(v1(&format!("/items/{item_id}/checkouts")))
+        .bearer()
+        .application_json()
+        .body(Body::from(
+            serde_json::json!({ "checkedOutBy": target_user_id }).to_string(),
+        ))?;
+
+    let resp = app.oneshot(req).await?;
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
+
+    Ok(())
+}
+
+#[rstest]
+#[tokio::test]
 async fn return_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Result<()> {
     let item_id = ItemId::new();
     let checkout_id = CheckoutId::new();

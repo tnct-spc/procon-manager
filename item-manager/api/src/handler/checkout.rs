@@ -13,7 +13,10 @@ use utoipa::OpenApi;
 
 use crate::{
     extractor::AuthorizedUser,
-    model::{checkout::CheckoutsResponse, error::ErrorResponse},
+    model::{
+        checkout::{CheckoutsResponse, CreateCheckoutRequest},
+        error::ErrorResponse,
+    },
 };
 
 #[derive(OpenApi)]
@@ -25,7 +28,7 @@ use crate::{
         checkout_history
     ),
     components(
-        schemas(CheckoutsResponse, ErrorResponse)
+        schemas(CheckoutsResponse, CreateCheckoutRequest, ErrorResponse)
     ),
     tags(
         (name = "checkouts", description = "Item checkout management endpoints")
@@ -42,9 +45,14 @@ pub struct ApiDoc;
     params(
         ("item_id" = String, Path, description = "Item ID to checkout"),
     ),
+    request_body(
+        content = Option<CreateCheckoutRequest>,
+        description = "Optional checkout user. Only administrators can specify another user."
+    ),
     responses(
         (status = 201, description = "Item checked out successfully"),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - Admin access required to checkout for another user", body = ErrorResponse),
         (status = 404, description = "Item not found", body = ErrorResponse),
         (status = 409, description = "Item already checked out", body = ErrorResponse),
     ),
@@ -55,8 +63,30 @@ pub async fn checkout_item(
     user: AuthorizedUser,
     Path(item_id): Path<ItemId>,
     State(registry): State<AppRegistry>,
+    body: Option<Json<CreateCheckoutRequest>>,
 ) -> AppResult<StatusCode> {
-    let create_checkout_history = CreateCheckout::new(item_id, user.id(), chrono::Utc::now());
+    let checked_out_by = body
+        .and_then(|Json(req)| req.checked_out_by)
+        .unwrap_or_else(|| user.id());
+
+    if checked_out_by != user.id() && !user.is_admin() {
+        return Err(shared::error::AppError::ForbiddenOperation(
+            "Admin access required to checkout for another user.".into(),
+        ));
+    }
+
+    if registry
+        .user_repository()
+        .find_current_user(checked_out_by)
+        .await?
+        .is_none()
+    {
+        return Err(shared::error::AppError::EntityNotFound(format!(
+            "User ({checked_out_by}) not found."
+        )));
+    }
+
+    let create_checkout_history = CreateCheckout::new(item_id, checked_out_by, chrono::Utc::now());
 
     registry
         .checkout_repository()
