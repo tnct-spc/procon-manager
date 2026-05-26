@@ -569,7 +569,7 @@ async fn return_item_as_admin_200(
 
 #[rstest]
 #[tokio::test]
-async fn return_item_non_admin_fails_422(
+async fn return_item_non_admin_fails_403(
     mut fixture: registry::MockAppRegistryExt,
 ) -> anyhow::Result<()> {
     let item_id = ItemId::new();
@@ -581,7 +581,7 @@ async fn return_item_non_admin_fails_422(
             // Verify that the user role is passed correctly
             assert_eq!(event.returned_by_role, kernel::model::role::Role::User);
             // Simulate the repository error when a non-admin tries to return someone else's item
-            Err(shared::error::AppError::UnprocessableEntity(
+            Err(shared::error::AppError::ForbiddenOperation(
                 "Designated checkout cannot be returned by non-admin user".into(),
             ))
         });
@@ -597,7 +597,7 @@ async fn return_item_non_admin_fails_422(
     .body(Body::empty())?;
 
     let resp = app.oneshot(req).await?;
-    assert_eq!(resp.status(), axum::http::StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
 
     Ok(())
 }
