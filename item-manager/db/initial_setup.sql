@@ -10,7 +10,7 @@ INSERT INTO
 SELECT
     'Admin',
     'admin@example.com',
-    '$2b$12$rwekkrZ97L5oSYs.QiPYoeYDYImqWHo7xvL2wyrhJ/6tJGRDCgXHa',
+    '$2b$12$ZIaGw7tfyojuJgbd2jHt1OK/RksKOrxeIamRoWafYVocfNcXY9v/K',
     role_id
 FROM
     roles
