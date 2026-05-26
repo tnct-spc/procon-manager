@@ -14,7 +14,8 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "audit": "pnpm audit --audit-level moderate",
-    "generate-types": "openapi-typescript ../openapi.json -o src/types/schema.d.ts"
+    "generate-openapi": "cargo run --manifest-path ../item-manager/Cargo.toml --bin generate-openapi > ../openapi.json",
+    "generate-types": "pnpm generate-openapi && openapi-typescript ../openapi.json -o src/types/schema.d.ts"
   },
   "dependencies": {
     "openapi-fetch": "^0.14.0",

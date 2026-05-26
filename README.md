@@ -77,6 +77,19 @@ If you prefer to run services separately:
    pnpm dev
    ```
 
+## OpenAPI And Frontend Types
+
+The backend OpenAPI schema is generated from the Rust `utoipa` definitions. The frontend TypeScript API types are generated from `openapi.json`.
+
+Do not edit `frontend/src/types/schema.d.ts` by hand. Update the Rust API models or handler annotations first, then regenerate the schema and types:
+
+```bash
+cd frontend
+pnpm generate-types
+```
+
+This command runs the backend OpenAPI generator, writes `openapi.json` at the repository root, and regenerates `frontend/src/types/schema.d.ts`.
+
 ## Initial Operation Setup
 
 1. **Create backend environment file**

@@ -390,6 +390,9 @@ export interface components {
     CheckoutsResponse: {
       items: components['schemas']['CheckoutResponse'][]
     }
+    CreateCheckoutRequest: {
+      checkedOutBy?: null | components['schemas']['UserId']
+    }
     CreateItemRequest:
       | {
           /** @enum {string} */
@@ -652,6 +655,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Forbidden - Admin access required */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
     }
   }
   show_checked_out_list: {
@@ -765,6 +777,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Forbidden - Admin access required */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
       /** @description Item not found */
       404: {
         headers: {
@@ -797,6 +818,15 @@ export interface operations {
       }
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Forbidden - Admin access required */
+      403: {
         headers: {
           [name: string]: unknown
         }
@@ -866,7 +896,12 @@ export interface operations {
       }
       cookie?: never
     }
-    requestBody?: never
+    /** @description Optional checkout user. Only administrators can specify another user. */
+    requestBody?: {
+      content: {
+        'application/json': null | components['schemas']['CreateCheckoutRequest']
+      }
+    }
     responses: {
       /** @description Item checked out successfully */
       201: {
@@ -877,6 +912,15 @@ export interface operations {
       }
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Forbidden - Admin access required to checkout for another user */
+      403: {
         headers: {
           [name: string]: unknown
         }
