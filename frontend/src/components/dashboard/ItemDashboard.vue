@@ -10,10 +10,79 @@ import EditItemForm from './EditItemForm.vue'
 const store = useAppStore()
 const showCreateForm = ref(false)
 const isAdmin = computed(() => store.currentUser?.role === 'Admin')
+const pendingCheckoutItemId = ref<string | null>(null)
+const pendingReturnItemId = ref<string | null>(null)
+const selectedCheckoutUserId = ref<string>('')
+const checkoutUserQuery = ref('')
+
+const formatCheckoutUser = (user: { name: string; email: string }) => `${user.name} (${user.email})`
+
+const selectedCheckoutUser = computed(() =>
+  store.users.find((user) => user.id === selectedCheckoutUserId.value),
+)
+
+const pendingCheckoutItem = computed(() =>
+  store.items.find((item) => item.id === pendingCheckoutItemId.value),
+)
+
+const pendingReturnItem = computed(() =>
+  store.items.find((item) => item.id === pendingReturnItemId.value),
+)
+
+const hasPendingAction = computed(() => !!pendingCheckoutItem.value || !!pendingReturnItem.value)
+
+const filteredCheckoutUsers = computed(() => {
+  const query = checkoutUserQuery.value.trim().toLowerCase()
+  if (!query) return store.users
+
+  return store.users.filter((user) => formatCheckoutUser(user).toLowerCase().includes(query))
+})
 
 const handleCheckout = async (item: Item) => {
+  if (!store.currentUser) {
+    alert('ログインが必要です。')
+    return
+  }
+
+  pendingCheckoutItemId.value = item.id
+  pendingReturnItemId.value = null
+  selectedCheckoutUserId.value = store.currentUser.id
+  checkoutUserQuery.value = ''
+}
+
+const cancelCheckout = () => {
+  pendingCheckoutItemId.value = null
+  selectedCheckoutUserId.value = ''
+  checkoutUserQuery.value = ''
+}
+
+const cancelReturn = () => {
+  pendingReturnItemId.value = null
+}
+
+const selectCheckoutUser = (userId: string) => {
+  const user = store.users.find((checkoutUser) => checkoutUser.id === userId)
+  if (!user) return
+
+  selectedCheckoutUserId.value = user.id
+  checkoutUserQuery.value = ''
+}
+
+const confirmCheckout = async (item: Item) => {
+  if (!store.currentUser) {
+    alert('ログインが必要です。')
+    return
+  }
+
+  const checkedOutBy = isAdmin.value ? selectedCheckoutUserId.value : store.currentUser.id
+  if (!checkedOutBy) {
+    alert('借りるユーザーを検索して選択してください。')
+    return
+  }
+
   try {
-    await store.checkoutItem(item.id)
+    await store.checkoutItem(item.id, checkedOutBy)
+    cancelCheckout()
   } catch (error: unknown) {
     console.error('チェックアウトエラー:', error)
     const apiError = error as ApiError
@@ -23,28 +92,38 @@ const handleCheckout = async (item: Item) => {
       alert('このアイテムは既にチェックアウトされています。')
     } else if (apiError.response?.status === 401) {
       alert('ログインが必要です。')
+    } else if (apiError.response?.status === 403) {
+      alert('指定したユーザーで借りる権限がありません。')
     } else {
       alert(`チェックアウトに失敗しました: ${getErrorMessage(error)}`)
     }
   }
 }
 
-const handleReturn = async (item: Item) => {
-  if (item.checkout) {
-    try {
-      await store.returnItem(item.id, item.checkout.id)
-    } catch (error: unknown) {
-      console.error('返却エラー:', error)
-      const apiError = error as ApiError
-      if (apiError.response?.status === 404) {
-        alert('アイテムまたはチェックアウトが見つかりません。')
-      } else if (apiError.response?.status === 403) {
-        alert('返却する権限がありません。')
-      } else if (apiError.response?.status === 401) {
-        alert('ログインが必要です。')
-      } else {
-        alert(`返却に失敗しました: ${getErrorMessage(error)}`)
-      }
+const handleReturn = (item: Item) => {
+  if (!item.checkout) return
+
+  pendingReturnItemId.value = item.id
+  cancelCheckout()
+}
+
+const confirmReturn = async (item: Item) => {
+  if (!item.checkout) return
+
+  try {
+    await store.returnItem(item.id, item.checkout.id)
+    cancelReturn()
+  } catch (error: unknown) {
+    console.error('返却エラー:', error)
+    const apiError = error as ApiError
+    if (apiError.response?.status === 404) {
+      alert('アイテムまたはチェックアウトが見つかりません。')
+    } else if (apiError.response?.status === 403) {
+      alert('返却する権限がありません。')
+    } else if (apiError.response?.status === 401) {
+      alert('ログインが必要です。')
+    } else {
+      alert(`返却に失敗しました: ${getErrorMessage(error)}`)
     }
   }
 }
@@ -119,8 +198,15 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(async () => {
-  await store.fetchItems()
   await store.getCurrentUser()
+  await store.fetchItems()
+  if (store.currentUser?.role === 'Admin') {
+    try {
+      await store.fetchUsers()
+    } catch (error: unknown) {
+      console.error('ユーザー一覧の取得に失敗:', error)
+    }
+  }
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -173,27 +259,38 @@ onBeforeUnmount(() => {
             <button
               v-if="!item.checkout"
               @click="handleCheckout(item)"
-              :class="$style.checkoutBtn"
-              :disabled="store.loading"
+              :class="[
+                $style.checkoutBtn,
+                { [$style.checkoutBtnActive]: pendingCheckoutItemId === item.id },
+              ]"
+              :disabled="store.loading || pendingCheckoutItemId === item.id"
             >
-              チェックアウト
+              {{ pendingCheckoutItemId === item.id ? '確認中' : '借りる' }}
             </button>
 
             <button
-              v-else-if="
+              v-if="
+                item.checkout &&
                 store.currentUser &&
                 (store.currentUser.role === 'Admin' ||
                   item.checkout.checkedOutBy.id === store.currentUser.id)
               "
               @click="handleReturn(item)"
-              :class="$style.returnBtn"
-              :disabled="store.loading"
+              :class="[
+                $style.returnBtn,
+                { [$style.returnBtnActive]: pendingReturnItemId === item.id },
+              ]"
+              :disabled="store.loading || pendingReturnItemId === item.id"
             >
-              返却
+              {{ pendingReturnItemId === item.id ? '確認中' : '返却' }}
             </button>
           </div>
 
-          <div v-if="isAdmin" :class="$style.menuContainer" data-menu-container>
+          <div
+            v-if="isAdmin && !hasPendingAction"
+            :class="$style.menuContainer"
+            data-menu-container
+          >
             <button
               @click="toggleMenu(item.id)"
               :class="$style.menuBtn"
@@ -214,6 +311,128 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-if="pendingCheckoutItem" :class="$style.checkoutOverlay" @click.self="cancelCheckout">
+      <section :class="$style.checkoutConfirm" aria-label="借用内容">
+        <div :class="$style.checkoutConfirmHeader">
+          <div>
+            <span :class="$style.checkoutConfirmTitle">借用内容</span>
+            <p :class="$style.checkoutItemName">{{ pendingCheckoutItem.name }}</p>
+          </div>
+          <button
+            @click="cancelCheckout"
+            :class="$style.inlineCloseBtn"
+            :disabled="store.loading"
+            aria-label="借用内容の確認を閉じる"
+          >
+            ×
+          </button>
+        </div>
+
+        <div v-if="isAdmin" :class="$style.checkoutField">
+          <span :class="$style.checkoutFieldLabel">借りるユーザー</span>
+          <div v-if="selectedCheckoutUser" :class="$style.selectedCheckoutUser">
+            <span :class="$style.selectedCheckoutUserLabel">選択中</span>
+            <span :class="$style.selectedCheckoutUserName">{{ selectedCheckoutUser.name }}</span>
+            <span :class="$style.selectedCheckoutUserEmail">{{ selectedCheckoutUser.email }}</span>
+          </div>
+          <input
+            v-model="checkoutUserQuery"
+            :class="$style.checkoutSearch"
+            :disabled="store.loading"
+            type="search"
+            placeholder="名前またはメールで検索"
+            aria-label="借りるユーザー"
+            @input="selectedCheckoutUserId = ''"
+          />
+          <div :class="$style.checkoutUserList">
+            <button
+              v-for="checkoutUser in filteredCheckoutUsers"
+              :key="checkoutUser.id"
+              type="button"
+              :class="[
+                $style.checkoutUserOption,
+                {
+                  [$style.checkoutUserOptionSelected]: checkoutUser.id === selectedCheckoutUserId,
+                },
+              ]"
+              :disabled="store.loading"
+              @click="selectCheckoutUser(checkoutUser.id)"
+            >
+              <span :class="$style.checkoutUserName">{{ checkoutUser.name }}</span>
+              <span :class="$style.checkoutUserEmail">{{ checkoutUser.email }}</span>
+            </button>
+            <span v-if="filteredCheckoutUsers.length === 0" :class="$style.noCheckoutUsers">
+              該当するユーザーがいません
+            </span>
+          </div>
+        </div>
+
+        <div v-else :class="$style.checkoutSummary">
+          {{ store.currentUser?.name }} として借ります
+        </div>
+
+        <div :class="$style.checkoutConfirmActions">
+          <button
+            @click="confirmCheckout(pendingCheckoutItem)"
+            :class="$style.confirmCheckoutBtn"
+            :disabled="store.loading || (isAdmin && !selectedCheckoutUserId)"
+          >
+            確定
+          </button>
+          <button
+            @click="cancelCheckout"
+            :class="$style.cancelCheckoutBtn"
+            :disabled="store.loading"
+          >
+            キャンセル
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="pendingReturnItem" :class="$style.checkoutOverlay" @click.self="cancelReturn">
+      <section :class="$style.checkoutConfirm" aria-label="返却内容">
+        <div :class="$style.checkoutConfirmHeader">
+          <div>
+            <span :class="$style.checkoutConfirmTitle">返却内容</span>
+            <p :class="$style.checkoutItemName">{{ pendingReturnItem.name }}</p>
+          </div>
+          <button
+            @click="cancelReturn"
+            :class="$style.inlineCloseBtn"
+            :disabled="store.loading"
+            aria-label="返却内容の確認を閉じる"
+          >
+            ×
+          </button>
+        </div>
+
+        <div v-if="pendingReturnItem.checkout" :class="$style.returnSummary">
+          <span :class="$style.returnSummaryLabel">借用者</span>
+          <span :class="$style.returnSummaryName">
+            {{ pendingReturnItem.checkout.checkedOutBy.name }}
+          </span>
+          <span :class="$style.returnSummaryDate">
+            {{ new Date(pendingReturnItem.checkout.checkedOutAt).toLocaleDateString('ja-JP') }}
+            から貸出中
+          </span>
+        </div>
+
+        <div :class="$style.checkoutConfirmActions">
+          <button
+            @click="confirmReturn(pendingReturnItem)"
+            :class="$style.confirmCheckoutBtn"
+            :disabled="store.loading"
+          >
+            確定
+          </button>
+          <button @click="cancelReturn" :class="$style.cancelCheckoutBtn" :disabled="store.loading">
+            キャンセル
+          </button>
+        </div>
+      </section>
     </div>
 
     <div v-if="store.items.length === 0 && !store.loading" :class="$style.empty">
@@ -263,7 +482,7 @@ onBeforeUnmount(() => {
     </div>
 
     <AddButton
-      v-if="isAdmin"
+      v-if="isAdmin && !hasPendingAction"
       @click="showCreateForm = true"
       :disabled="store.loading"
       label="新しいアイテムを追加"
@@ -273,9 +492,8 @@ onBeforeUnmount(() => {
 
 <style module>
 .container {
-  padding: clamp(1rem, 3vw, 1.5rem);
-  width: clamp(90%, 80vw, 80%);
-  max-width: 100%;
+  padding: 24px;
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
@@ -334,27 +552,29 @@ onBeforeUnmount(() => {
 
 .itemList {
   display: grid;
-  gap: 24px;
+  gap: 14px;
 }
 
 .itemCard {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: clamp(1rem, 3vw, 2rem);
-  padding: clamp(1.5rem, 4vw, 2rem);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
-  border-radius: 12px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+  align-items: stretch;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  border-radius: 8px;
   background: var(--color-background);
-  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-accent) 20%, transparent);
-  transition: all 0.2s;
-  min-height: clamp(100px, 15vh, 120px);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text) 8%, transparent);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  min-height: 150px;
   position: relative;
 }
 
 .itemCard:hover {
-  border-color: var(--color-accent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 48%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 
 .checkedOut {
@@ -362,8 +582,9 @@ onBeforeUnmount(() => {
 }
 
 .itemInfo {
-  justify-self: start;
-  min-width: clamp(250px, 60%, 400px);
+  justify-self: stretch;
+  min-width: 0;
+  padding-top: 28px;
 }
 
 .itemHeader {
@@ -379,16 +600,16 @@ onBeforeUnmount(() => {
 
 .itemType {
   position: absolute;
-  top: clamp(0.75rem, 2vw, 1rem);
-  right: clamp(0.75rem, 2vw, 1rem);
-  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-background));
-  color: var(--color-accent);
-  padding: clamp(0.25rem, 1vw, 0.5rem) clamp(0.5rem, 1.5vw, 0.75rem);
-  border-radius: 12px;
-  font-size: clamp(0.75rem, 2vw, 0.875rem);
-  font-weight: 500;
+  top: 20px;
+  left: 24px;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-background));
+  color: color-mix(in srgb, var(--color-accent) 86%, var(--color-text));
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
-  z-index: 10;
+  letter-spacing: 0;
 }
 
 .description {
@@ -436,31 +657,39 @@ onBeforeUnmount(() => {
 }
 
 .itemActions {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: clamp(0.75rem, 2vw, 1rem);
-  min-width: clamp(150px, 25vw, 200px);
-  flex-wrap: wrap;
+  gap: 10px;
+  width: 360px;
+  min-width: 0;
+  min-height: 44px;
   justify-content: flex-end;
   justify-self: end;
 }
 
 .primaryActions {
   display: flex;
-  gap: clamp(0.5rem, 1.5vw, 0.75rem);
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  position: relative;
 }
 
 .checkoutBtn,
-.returnBtn {
+.returnBtn,
+.confirmCheckoutBtn,
+.cancelCheckoutBtn {
   padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1rem);
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: clamp(0.75rem, 2vw, 0.875rem);
-  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
   white-space: nowrap;
-  min-width: clamp(80px, 20vw, 120px);
+  min-width: 104px;
 }
 
 .checkoutBtn {
@@ -482,9 +711,237 @@ onBeforeUnmount(() => {
 }
 
 .checkoutBtn:disabled,
-.returnBtn:disabled {
+.returnBtn:disabled,
+.confirmCheckoutBtn:disabled,
+.cancelCheckoutBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.checkoutBtnActive:disabled {
+  background: color-mix(in srgb, var(--color-accent) 86%, var(--color-text));
+  color: var(--color-background);
+  opacity: 1;
+}
+
+.returnBtnActive:disabled {
+  background: color-mix(in srgb, var(--color-warning) 86%, var(--color-text));
+  color: var(--color-background);
+  opacity: 1;
+}
+
+.checkoutOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 118px max(24px, calc((100vw - 1180px) / 2 + 24px)) 24px 24px;
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.checkoutConfirm {
+  width: min(420px, calc(100vw - 48px));
+  max-height: calc(100vh - 142px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  border-radius: 8px;
+  background: var(--color-background);
+  box-shadow: 0 18px 46px color-mix(in srgb, var(--color-text) 20%, transparent);
+}
+
+.checkoutConfirmHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.checkoutConfirmTitle {
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.checkoutItemName {
+  margin: 4px 0 0;
+  color: color-mix(in srgb, var(--color-text) 64%, transparent);
+  font-size: 13px;
+}
+
+.inlineCloseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.inlineCloseBtn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: color-mix(in srgb, var(--color-text) 28%, transparent);
+}
+
+.checkoutField {
+  display: grid;
+  gap: 8px;
+}
+
+.checkoutFieldLabel {
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.checkoutSearch {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.checkoutSearch:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.checkoutUserList {
+  display: grid;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+  border-radius: 6px;
+  background: var(--color-background);
+}
+
+.checkoutUserOption {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.checkoutUserOption:hover:not(:disabled),
+.checkoutUserOptionSelected {
+  border-color: color-mix(in srgb, var(--color-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-background));
+}
+
+.checkoutUserName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkoutUserEmail {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.selectedCheckoutUser {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-background));
+}
+
+.selectedCheckoutUserLabel,
+.selectedCheckoutUserEmail,
+.noCheckoutUsers {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 12px;
+}
+
+.selectedCheckoutUserName {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.noCheckoutUsers {
+  padding: 10px;
+}
+
+.checkoutSummary {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.returnSummary {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 28%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-background));
+}
+
+.returnSummaryLabel,
+.returnSummaryDate {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 12px;
+}
+
+.returnSummaryName {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.checkoutConfirmActions {
+  display: flex;
+  gap: 8px;
+  justify-content: stretch;
+  margin-top: 14px;
+}
+
+.confirmCheckoutBtn {
+  background: var(--color-accent);
+  color: var(--color-background);
+  flex: 1;
+  min-width: 0;
+}
+
+.confirmCheckoutBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 80%, black);
+}
+
+.cancelCheckoutBtn {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent);
+  flex: 1;
+  min-width: 0;
+}
+
+.cancelCheckoutBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 14%, var(--color-background));
 }
 
 .empty {
@@ -656,17 +1113,26 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 40rem) {
+  .container {
+    width: min(100% - 24px, 1180px);
+    padding: 16px 12px;
+  }
+
   .itemCard {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
+    gap: 18px;
+    padding: 20px;
   }
 
   .itemInfo {
     justify-self: stretch;
+    padding-top: 28px;
   }
 
   .itemActions {
     justify-self: stretch;
+    width: 100%;
     justify-content: flex-end;
   }
 
@@ -677,7 +1143,17 @@ onBeforeUnmount(() => {
 
   .checkoutBtn,
   .returnBtn {
-    min-width: clamp(80px, 20vw, 120px);
+    min-width: 112px;
+  }
+
+  .checkoutOverlay {
+    align-items: flex-end;
+    padding: 16px;
+  }
+
+  .checkoutConfirm {
+    width: 100%;
+    max-height: min(78vh, 620px);
   }
 
   .pagination {

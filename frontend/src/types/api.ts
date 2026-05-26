@@ -7,6 +7,7 @@ export type { paths }
 export type User = components['schemas']['UserResponse']
 export type Item = components['schemas']['ItemResponse']
 export type CreateItemRequest = components['schemas']['CreateItemRequest']
+export type CreateCheckoutRequest = components['schemas']['CreateCheckoutRequest']
 export type CreateUserRequest = components['schemas']['CreateUserRequest']
 export type UpdateItemRequest = components['schemas']['UpdateItemRequest']
 export type LoginRequest = components['schemas']['LoginRequest']

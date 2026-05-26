@@ -6,6 +6,7 @@ import { getErrorMessage } from '../types/error'
 
 export const useAppStore = defineStore('app', () => {
   const items = ref<Item[]>([])
+  const users = ref<User[]>([])
   const currentUser = ref<User | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -66,7 +67,7 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  const checkoutItem = async (itemId: string) => {
+  const checkoutItem = async (itemId: string, checkedOutBy?: string) => {
     loading.value = true
     error.value = null
     try {
@@ -74,6 +75,7 @@ export const useAppStore = defineStore('app', () => {
         params: {
           path: { item_id: itemId },
         },
+        body: checkedOutBy ? { checkedOutBy } : {},
       })
 
       if (error) {
@@ -181,10 +183,30 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  const fetchUsers = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const { data, error, response } = await client.GET('/api/v1/users')
+
+      if (error || !data) {
+        throw { response, error }
+      }
+
+      users.value = data.items
+    } catch (err: unknown) {
+      error.value = getErrorMessage(err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value))
 
   return {
     items,
+    users,
     currentUser,
     loading,
     error,
@@ -199,5 +221,6 @@ export const useAppStore = defineStore('app', () => {
     updateItem,
     deleteItem,
     getCurrentUser,
+    fetchUsers,
   }
 })
