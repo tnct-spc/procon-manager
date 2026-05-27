@@ -64,5 +64,4 @@ tokio.workspace = true
 tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 tracing.workspace = true
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
-utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
