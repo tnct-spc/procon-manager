@@ -14,6 +14,7 @@ const pendingCheckoutItemId = ref<string | null>(null)
 const pendingReturnItemId = ref<string | null>(null)
 const selectedCheckoutUserId = ref<string>('')
 const checkoutUserQuery = ref('')
+const itemSearchQuery = ref('')
 
 const formatCheckoutUser = (user: { name: string; email: string }) => `${user.name} (${user.email})`
 
@@ -30,6 +31,25 @@ const pendingReturnItem = computed(() =>
 )
 
 const hasPendingAction = computed(() => !!pendingCheckoutItem.value || !!pendingReturnItem.value)
+
+const getItemSearchText = (item: Item) =>
+  [
+    item.name,
+    item.description,
+    getItemTypeLabel(item),
+    getItemDetails(item),
+    item.checkout?.checkedOutBy.name,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+const filteredItems = computed(() => {
+  const query = itemSearchQuery.value.trim().toLowerCase()
+  if (!query) return store.items
+
+  return store.items.filter((item) => getItemSearchText(item).includes(query))
+})
 
 const filteredCheckoutUsers = computed(() => {
   const query = checkoutUserQuery.value.trim().toLowerCase()
@@ -221,6 +241,19 @@ onBeforeUnmount(() => {
       <h1>アイテム管理</h1>
     </div>
 
+    <div :class="$style.searchBar">
+      <input
+        v-model="itemSearchQuery"
+        :class="$style.searchInput"
+        type="search"
+        placeholder="アイテム名、説明、種別、貸出ユーザーで検索"
+        aria-label="アイテム検索"
+      />
+      <span :class="$style.searchCount">
+        {{ filteredItems.length }} / {{ store.items.length }} 件
+      </span>
+    </div>
+
     <div v-if="store.error" :class="$style.error">
       {{ store.error }}
     </div>
@@ -229,7 +262,7 @@ onBeforeUnmount(() => {
 
     <div v-else :class="$style.itemList">
       <div
-        v-for="item in store.items"
+        v-for="item in filteredItems"
         :key="item.id"
         :class="[$style.itemCard, { [$style.checkedOut]: item.checkout }]"
       >
@@ -435,8 +468,8 @@ onBeforeUnmount(() => {
       </section>
     </div>
 
-    <div v-if="store.items.length === 0 && !store.loading" :class="$style.empty">
-      アイテムがありません
+    <div v-if="filteredItems.length === 0 && !store.loading" :class="$style.empty">
+      {{ store.items.length === 0 ? 'アイテムがありません' : '条件に一致するアイテムがありません' }}
     </div>
 
     <!-- Pagination Controls -->
@@ -548,6 +581,45 @@ onBeforeUnmount(() => {
   text-align: center;
   padding: 40px;
   color: color-mix(in srgb, var(--color-text) 60%, transparent);
+}
+
+.searchBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-background) 88%, white);
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 14px;
+  padding: 8px 12px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+.searchCount {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .itemList {
@@ -1163,6 +1235,15 @@ onBeforeUnmount(() => {
   .paginationBtn {
     width: 100%;
     max-width: 200px;
+  }
+
+  .searchBar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .searchCount {
+    justify-self: end;
   }
 }
 </style>

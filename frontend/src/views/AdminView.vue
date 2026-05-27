@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import client from '../services/api'
 import { useAppStore } from '../stores/counter'
 import type { User, CreateUserRequest, UpdateUserRoleRequest } from '../types/api'
@@ -12,10 +12,20 @@ const isUpdating = ref(false)
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
 const addUserError = ref<string | null>(null)
+const userSearchQuery = ref('')
 const newUser = ref<CreateUserRequest>({
   name: '',
   email: '',
   password: '',
+})
+
+const getUserSearchText = (user: User) => [user.name, user.email, user.role].join(' ').toLowerCase()
+
+const filteredUsers = computed(() => {
+  const query = userSearchQuery.value.trim().toLowerCase()
+  if (!query) return users.value
+
+  return users.value.filter((user) => getUserSearchText(user).includes(query))
 })
 
 const fetchUsers = async () => {
@@ -159,6 +169,17 @@ onMounted(() => {
         </button>
       </div>
 
+      <div :class="$style.searchBar">
+        <input
+          v-model="userSearchQuery"
+          :class="$style.searchInput"
+          type="search"
+          placeholder="名前、メールアドレス、権限で検索"
+          aria-label="ユーザー検索"
+        />
+        <span :class="$style.searchCount">{{ filteredUsers.length }} / {{ users.length }} 件</span>
+      </div>
+
       <div v-if="store.loading" :class="$style.loading">読み込み中...</div>
 
       <div v-else-if="error" :class="$style.error">
@@ -166,7 +187,7 @@ onMounted(() => {
       </div>
 
       <div v-else :class="$style.userList">
-        <div v-for="user in users" :key="user.id" :class="$style.userCard">
+        <div v-for="user in filteredUsers" :key="user.id" :class="$style.userCard">
           <div :class="$style.userInfo">
             <div :class="$style.userName">{{ user.name }}</div>
             <div :class="$style.userEmail">{{ user.email }}</div>
@@ -211,6 +232,10 @@ onMounted(() => {
               アカウント削除
             </button>
           </div>
+        </div>
+
+        <div v-if="filteredUsers.length === 0" :class="$style.empty">
+          {{ users.length === 0 ? 'ユーザーがいません' : '条件に一致するユーザーがいません' }}
         </div>
       </div>
     </div>
@@ -326,6 +351,53 @@ onMounted(() => {
   border-radius: 4px;
   border: 1px solid #fed7d7;
   margin-bottom: 16px;
+}
+
+.searchBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #d8dee6;
+  border-radius: 4px;
+  background: white;
+  color: #2c3e50;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.searchCount {
+  color: #7f8c8d;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 32px;
+  color: #7f8c8d;
+  font-size: 16px;
+  text-align: center;
 }
 
 .userList {
@@ -625,6 +697,15 @@ onMounted(() => {
     align-items: stretch;
   }
 
+  .searchBar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .searchCount {
+    justify-self: end;
+  }
+
   .addUserBtn {
     width: 100%;
     max-width: 200px;
@@ -641,6 +722,17 @@ onMounted(() => {
   .createBtn {
     width: 100%;
     min-width: auto;
+  }
+}
+
+@media (max-width: 40rem) {
+  .searchBar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .searchCount {
+    justify-self: end;
   }
 }
 </style>
