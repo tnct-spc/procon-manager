@@ -3,6 +3,7 @@ target
 .direnv
 /.pre-commit-config.yaml
 /data
+/openapi.json
 .env-item
 .env
 
@@ -49,4 +50,3 @@ coverage
 *.sw?
 
 *.tsbuildinfo
-
