@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../../stores/counter'
+import client from '../../services/api'
 
 const router = useRouter()
 const store = useAppStore()
 
-const handleLogout = () => {
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('userId')
+const handleLogout = async () => {
+  await client.POST('/auth/logout')
   store.currentUser = null
   router.push('/login')
 }

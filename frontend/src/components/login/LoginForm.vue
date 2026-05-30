@@ -31,9 +31,7 @@ const login = async () => {
       throw new Error('No response data')
     }
 
-    const { accessToken, userId } = data
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('userId', userId)
+    await client.GET('/api/v1/users/me')
     router.push('/dashboard')
   } catch (err: unknown) {
     errorMessage.value = getErrorMessage(err)

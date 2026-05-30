@@ -11,7 +11,7 @@ use kernel::repository::{
     auth::AuthRepository, checkout::CheckoutRepository, health::HealthCheckRepository,
     item::ItemRepository, user::UserRepository,
 };
-use shared::config::AppConfig;
+use shared::config::{AppConfig, WebConfig};
 
 #[derive(Clone)]
 pub struct AppRegistryImpl {
@@ -20,6 +20,7 @@ pub struct AppRegistryImpl {
     auth_repository: Arc<dyn AuthRepository>,
     user_repository: Arc<dyn UserRepository>,
     checkout_repository: Arc<dyn CheckoutRepository>,
+    web_config: WebConfig,
 }
 
 impl AppRegistryImpl {
@@ -39,6 +40,7 @@ impl AppRegistryImpl {
             auth_repository,
             user_repository,
             checkout_repository,
+            web_config: app_config.web,
         }
     }
 }
@@ -50,6 +52,7 @@ pub trait AppRegistryExt {
     fn auth_repository(&self) -> Arc<dyn AuthRepository>;
     fn user_repository(&self) -> Arc<dyn UserRepository>;
     fn checkout_repository(&self) -> Arc<dyn CheckoutRepository>;
+    fn web_config(&self) -> WebConfig;
 }
 
 impl AppRegistryExt for AppRegistryImpl {
@@ -71,6 +74,10 @@ impl AppRegistryExt for AppRegistryImpl {
 
     fn checkout_repository(&self) -> Arc<dyn CheckoutRepository> {
         self.checkout_repository.clone()
+    }
+
+    fn web_config(&self) -> WebConfig {
+        self.web_config.clone()
     }
 }
 

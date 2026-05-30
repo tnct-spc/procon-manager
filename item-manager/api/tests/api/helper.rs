@@ -8,6 +8,7 @@ use kernel::{
 };
 use registry::MockAppRegistryExt;
 use rstest::fixture;
+use shared::config::WebConfig;
 
 pub fn v1(endpoint: &str) -> String {
     format!("/api/v1{endpoint}")
@@ -27,6 +28,13 @@ pub fn fixture_registry() -> MockAppRegistryExt {
 
 #[fixture]
 pub fn fixture_auth(mut fixture_registry: MockAppRegistryExt) -> MockAppRegistryExt {
+    fixture_registry
+        .expect_web_config()
+        .returning(|| WebConfig {
+            frontend_origin: "http://localhost:5173".to_string(),
+            access_token_cookie_name: "access_token".to_string(),
+            access_token_cookie_max_age_seconds: 86_400,
+        });
     fixture_registry.expect_auth_repository().returning(|| {
         let mut mock_auth_repository = MockAuthRepository::new();
         mock_auth_repository
@@ -88,7 +96,7 @@ pub trait TestRequestExt {
 
 impl TestRequestExt for Builder {
     fn bearer(self) -> Builder {
-        self.header("Authorization", "Bearer dummy")
+        self.header("Cookie", "access_token=dummy")
     }
 
     fn application_json(self) -> Builder {

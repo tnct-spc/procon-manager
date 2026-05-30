@@ -12,17 +12,7 @@ const getBaseURL = () => {
 // Create the main API client with authentication
 const client = createClient<paths>({
   baseUrl: getBaseURL(),
-})
-
-// Add JWT authentication middleware
-client.use({
-  onRequest({ request }) {
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      request.headers.set('Authorization', `Bearer ${token}`)
-    }
-    return request
-  },
+  credentials: 'include',
 })
 
 export default client

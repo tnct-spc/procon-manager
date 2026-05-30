@@ -354,12 +354,27 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/auth/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: operations['logout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    AccessTokenResponse: {
-      accessToken: string
+    LoginResponse: {
       userId: components['schemas']['UserId']
     }
     BookResponse: {
@@ -1420,7 +1435,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AccessTokenResponse']
+          'application/json': components['schemas']['LoginResponse']
         }
       }
       /** @description Invalid credentials */
@@ -1431,6 +1446,23 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse']
         }
+      }
+    }
+  }
+  logout: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    responses: {
+      /** @description Logout successful */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
     }
   }

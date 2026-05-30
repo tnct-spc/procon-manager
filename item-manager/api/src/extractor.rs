@@ -1,9 +1,5 @@
-use axum::RequestPartsExt;
 use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
-use axum_extra::TypedHeader;
-use axum_extra::headers::Authorization;
-use axum_extra::headers::authorization::Bearer;
+use axum::http::{header::COOKIE, request::Parts};
 use kernel::model::auth::AccessToken;
 use kernel::model::id::UserId;
 use kernel::model::role::Role;
@@ -32,11 +28,20 @@ impl FromRequestParts<AppRegistry> for AuthorizedUser {
         parts: &mut Parts,
         registry: &AppRegistry,
     ) -> Result<Self, Self::Rejection> {
-        let TypedHeader(Authorization(bearer)) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
-            .map_err(|_| AppError::UnauthorizedError)?;
-        let access_token = AccessToken(bearer.token().to_string());
+        let web_config = registry.web_config();
+        let cookie_header = parts
+            .headers
+            .get(COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .ok_or(AppError::UnauthorizedError)?;
+        let token = cookie_header
+            .split(';')
+            .filter_map(|cookie| cookie.trim().split_once('='))
+            .find_map(|(name, value)| {
+                (name == web_config.access_token_cookie_name).then(|| value.to_string())
+            })
+            .ok_or(AppError::UnauthorizedError)?;
+        let access_token = AccessToken(token);
 
         let user_id = registry
             .auth_repository()

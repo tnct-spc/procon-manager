@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use api::route::{auth, v1};
-use axum::http::{HeaderName, Method};
+use axum::http::{HeaderName, HeaderValue, Method};
 use tower_http::{
     LatencyUnit,
-    cors::{self, CorsLayer},
+    cors::CorsLayer,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
 };
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -42,19 +42,23 @@ fn init_logger() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn cors() -> CorsLayer {
-    CorsLayer::new()
+fn cors(frontend_origin: &str) -> anyhow::Result<CorsLayer> {
+    let frontend_origin = frontend_origin.parse::<HeaderValue>()?;
+
+    Ok(CorsLayer::new()
         .allow_headers(vec![
             HeaderName::from_static("authorization"),
             HeaderName::from_static("content-type"),
             HeaderName::from_static("accept"),
         ])
         .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_origin(cors::Any)
+        .allow_origin(frontend_origin)
+        .allow_credentials(true))
 }
 
 async fn bootstrap() -> anyhow::Result<()> {
     let app_config = shared::config::AppConfig::new()?;
+    let cors = cors(&app_config.web.frontend_origin)?;
     let pool = adapter::database::connect_database_with(&app_config.database);
     let registry = Arc::new(registry::AppRegistryImpl::new(pool, app_config));
 
@@ -65,7 +69,7 @@ async fn bootstrap() -> anyhow::Result<()> {
             SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", api::openapi::build_openapi()),
         )
-        .layer(cors())
+        .layer(cors)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))
