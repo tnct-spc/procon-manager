@@ -1138,7 +1138,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccessTokenResponse"
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
               }
             }
@@ -1155,25 +1155,23 @@
           }
         }
       }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Logout successful"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
-      "AccessTokenResponse": {
-        "type": "object",
-        "required": [
-          "userId",
-          "accessToken"
-        ],
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "userId": {
-            "$ref": "#/components/schemas/UserId"
-          }
-        }
-      },
       "BookResponse": {
         "type": "object",
         "required": [
@@ -1205,6 +1203,12 @@
           },
           "isbn": {
             "type": "string"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "name": {
             "type": "string"
@@ -1308,6 +1312,13 @@
                 "type": "string",
                 "maxLength": 1024
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
               "name": {
                 "type": "string",
                 "maxLength": 255
@@ -1342,6 +1353,13 @@
                 "type": "string",
                 "maxLength": 255
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
               "name": {
                 "type": "string",
                 "maxLength": 255
@@ -1366,6 +1384,13 @@
               "description": {
                 "type": "string",
                 "maxLength": 1024
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
               },
               "mac_address": {
                 "type": "string",
@@ -1434,6 +1459,12 @@
           },
           "id": {
             "$ref": "#/components/schemas/ItemId"
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "name": {
             "type": "string"
@@ -1564,6 +1595,12 @@
           "id": {
             "$ref": "#/components/schemas/ItemId"
           },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "macAddress": {
             "type": "string",
             "example": "00:00:00:00:00:00"
@@ -1608,6 +1645,17 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "userId"
+        ],
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/UserId"
           }
         }
       },
@@ -1667,6 +1715,13 @@
                 "type": "string",
                 "maxLength": 1024
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
               "name": {
                 "type": "string",
                 "maxLength": 255
@@ -1701,6 +1756,13 @@
                 "type": "string",
                 "maxLength": 255
               },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
+              },
               "name": {
                 "type": "string",
                 "maxLength": 255
@@ -1725,6 +1787,13 @@
               "description": {
                 "type": "string",
                 "maxLength": 1024
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 255
               },
               "mac_address": {
                 "type": "string",

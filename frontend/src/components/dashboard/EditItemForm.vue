@@ -20,6 +20,7 @@ const error = ref<string | null>(null)
 const formData = ref({
   name: '',
   description: '',
+  location: '',
   category: 'general' as 'general' | 'book' | 'laptop',
   author: undefined as string | undefined,
   isbn: undefined as string | undefined,
@@ -38,6 +39,7 @@ const handleSubmit = async () => {
   error.value = null
 
   try {
+    const location = formData.value.location.trim() || null
     const requestData: UpdateItemRequest = (() => {
       switch (formData.value.category) {
         case 'book':
@@ -45,6 +47,7 @@ const handleSubmit = async () => {
             category: 'book',
             name: formData.value.name,
             description: formData.value.description,
+            location,
             author: formData.value.author || '',
             isbn: formData.value.isbn || '',
           }
@@ -53,6 +56,7 @@ const handleSubmit = async () => {
             category: 'laptop',
             name: formData.value.name,
             description: formData.value.description,
+            location,
             mac_address: formData.value.macAddress || '',
           }
         default:
@@ -60,6 +64,7 @@ const handleSubmit = async () => {
             category: 'general',
             name: formData.value.name,
             description: formData.value.description,
+            location,
           }
       }
     })()
@@ -78,6 +83,7 @@ onMounted(() => {
   formData.value = {
     name: props.item.name,
     description: props.item.description,
+    location: props.item.location || '',
     category: props.item.category,
     author: props.item.category === 'book' ? props.item.author : undefined,
     isbn: props.item.category === 'book' ? props.item.isbn : undefined,
@@ -106,6 +112,17 @@ onMounted(() => {
           :class="$style.textarea"
           rows="3"
           placeholder="アイテムの説明を入力"
+        />
+      </div>
+
+      <div :class="$style.formGroup">
+        <label :class="$style.label">場所</label>
+        <input
+          v-model="formData.location"
+          type="text"
+          :class="$style.input"
+          maxlength="255"
+          placeholder="例: 棚A-3"
         />
       </div>
 

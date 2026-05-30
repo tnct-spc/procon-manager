@@ -374,15 +374,13 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    LoginResponse: {
-      userId: components['schemas']['UserId']
-    }
     BookResponse: {
       author: string
       checkout?: null | components['schemas']['ItemCheckoutResponse']
       description: string
       id: components['schemas']['ItemId']
       isbn: string
+      location?: string | null
       name: string
     }
     CheckoutId: string
@@ -413,6 +411,7 @@ export interface components {
           /** @enum {string} */
           category: 'general'
           description: string
+          location?: string | null
           name: string
         }
       | {
@@ -421,12 +420,14 @@ export interface components {
           category: 'book'
           description: string
           isbn: string
+          location?: string | null
           name: string
         }
       | {
           /** @enum {string} */
           category: 'laptop'
           description: string
+          location?: string | null
           /** @example 00:00:00:00:00:00 */
           mac_address: string
           name: string
@@ -443,6 +444,7 @@ export interface components {
       checkout?: null | components['schemas']['ItemCheckoutResponse']
       description: string
       id: components['schemas']['ItemId']
+      location?: string | null
       name: string
     }
     /** @enum {string} */
@@ -474,6 +476,7 @@ export interface components {
       checkout?: null | components['schemas']['ItemCheckoutResponse']
       description: string
       id: components['schemas']['ItemId']
+      location?: string | null
       /** @example 00:00:00:00:00:00 */
       macAddress: string
       name: string
@@ -488,6 +491,9 @@ export interface components {
     LoginRequest: {
       email: string
       password: string
+    }
+    LoginResponse: {
+      userId: components['schemas']['UserId']
     }
     PaginatedItemResponse: {
       items: components['schemas']['ItemResponse'][]
@@ -505,6 +511,7 @@ export interface components {
           /** @enum {string} */
           category: 'general'
           description: string
+          location?: string | null
           name: string
         }
       | {
@@ -513,12 +520,14 @@ export interface components {
           category: 'book'
           description: string
           isbn: string
+          location?: string | null
           name: string
         }
       | {
           /** @enum {string} */
           category: 'laptop'
           description: string
+          location?: string | null
           /** @example 00:00:00:00:00:00 */
           mac_address: string
           name: string
@@ -1456,6 +1465,7 @@ export interface operations {
       path?: never
       cookie?: never
     }
+    requestBody?: never
     responses: {
       /** @description Logout successful */
       204: {

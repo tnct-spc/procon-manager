@@ -24,6 +24,10 @@ pub enum CreateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
     #[serde(rename = "book")]
     Book {
@@ -39,6 +43,10 @@ pub enum CreateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
     #[serde(rename = "laptop")]
     Laptop {
@@ -51,34 +59,48 @@ pub enum CreateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
 }
 
 impl From<CreateItemRequest> for CreateItem {
     fn from(value: CreateItemRequest) -> Self {
         match value {
-            CreateItemRequest::General { name, description } => {
-                CreateItem::General { name, description }
-            }
+            CreateItemRequest::General {
+                name,
+                description,
+                location,
+            } => CreateItem::General {
+                name,
+                description,
+                location: normalize_location(location),
+            },
             CreateItemRequest::Book {
                 name,
                 author,
                 isbn,
                 description,
+                location,
             } => CreateItem::Book {
                 name,
                 author,
                 isbn,
                 description,
+                location: normalize_location(location),
             },
             CreateItemRequest::Laptop {
                 name,
                 mac_address,
                 description,
+                location,
             } => CreateItem::Laptop {
                 name,
                 mac_address,
                 description,
+                location: normalize_location(location),
             },
         }
     }
@@ -97,6 +119,10 @@ pub enum UpdateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
     #[serde(rename = "book")]
     Book {
@@ -112,6 +138,10 @@ pub enum UpdateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
     #[serde(rename = "laptop")]
     Laptop {
@@ -124,41 +154,61 @@ pub enum UpdateItemRequest {
         #[garde(length(max = 1024))]
         #[schema(max_length = 1024)]
         description: String,
+        #[serde(default)]
+        #[garde(length(max = 255))]
+        #[schema(max_length = 255, nullable = true)]
+        location: Option<String>,
     },
 }
 
 impl UpdateItemRequest {
     pub fn into_update_item(self, item_id: ItemId) -> UpdateItem {
         match self {
-            UpdateItemRequest::General { name, description } => UpdateItem::General {
+            UpdateItemRequest::General {
+                name,
+                description,
+                location,
+            } => UpdateItem::General {
                 item_id,
                 name,
                 description,
+                location: normalize_location(location),
             },
             UpdateItemRequest::Book {
                 name,
                 author,
                 isbn,
                 description,
+                location,
             } => UpdateItem::Book {
                 item_id,
                 name,
                 author,
                 isbn,
                 description,
+                location: normalize_location(location),
             },
             UpdateItemRequest::Laptop {
                 name,
                 mac_address,
                 description,
+                location,
             } => UpdateItem::Laptop {
                 item_id,
                 name,
                 mac_address,
                 description,
+                location: normalize_location(location),
             },
         }
     }
+}
+
+fn normalize_location(location: Option<String>) -> Option<String> {
+    location.and_then(|value| {
+        let trimmed = value.trim().to_string();
+        (!trimmed.is_empty()).then_some(trimmed)
+    })
 }
 
 // Response types
@@ -169,6 +219,7 @@ pub struct GeneralItemResponse {
     pub id: ItemId,
     pub name: String,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
@@ -180,6 +231,7 @@ pub struct BookResponse {
     pub author: String,
     pub isbn: String,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
@@ -191,6 +243,7 @@ pub struct LaptopResponse {
     #[schema(value_type = String, example = "00:00:00:00:00:00")]
     pub mac_address: MacAddress,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<ItemCheckoutResponse>,
 }
 
@@ -214,6 +267,7 @@ impl TryFrom<Item> for ItemResponse {
                 id: item.id,
                 name: item.name,
                 description: item.description,
+                location: item.location,
                 checkout: item.checkout.map(ItemCheckoutResponse::from),
             }),
             Item::Book(book) => ItemResponse::Book(BookResponse {
@@ -222,6 +276,7 @@ impl TryFrom<Item> for ItemResponse {
                 author: book.author,
                 isbn: book.isbn,
                 description: book.description,
+                location: book.location,
                 checkout: book.checkout.map(ItemCheckoutResponse::from),
             }),
             Item::Laptop(laptop) => ItemResponse::Laptop(LaptopResponse {
@@ -229,6 +284,7 @@ impl TryFrom<Item> for ItemResponse {
                 name: laptop.name,
                 mac_address: laptop.mac_address,
                 description: laptop.description,
+                location: laptop.location,
                 checkout: laptop.checkout.map(ItemCheckoutResponse::from),
             }),
         })

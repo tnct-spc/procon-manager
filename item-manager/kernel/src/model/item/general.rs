@@ -5,5 +5,6 @@ pub struct GeneralItem {
     pub id: ItemId,
     pub name: String,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<SimpleCheckout>,
 }

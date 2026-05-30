@@ -24,14 +24,24 @@ impl ItemRepository for ItemRepositoryImpl {
     async fn create(&self, event: CreateItem) -> AppResult<()> {
         let category = event.as_ref();
 
-        let (name, description) = match &event {
-            CreateItem::General { name, description }
+        let (name, description, location) = match &event {
+            CreateItem::General {
+                name,
+                description,
+                location,
+            }
             | CreateItem::Book {
-                name, description, ..
+                name,
+                description,
+                location,
+                ..
             }
             | CreateItem::Laptop {
-                name, description, ..
-            } => (name, description),
+                name,
+                description,
+                location,
+                ..
+            } => (name, description, location),
         };
 
         let mut tx = self.db.begin().await?;
@@ -39,12 +49,13 @@ impl ItemRepository for ItemRepositoryImpl {
 
         let item_id = sqlx::query!(
             r#"
-            INSERT INTO items (name, description, category)
-            VALUES ($1, $2, $3)
+            INSERT INTO items (name, description, location, category)
+            VALUES ($1, $2, $3, $4)
             RETURNING item_id
         "#,
             name,
             description,
+            location.as_deref(),
             category
         )
         .fetch_one(&mut *tx)
@@ -138,6 +149,7 @@ impl ItemRepository for ItemRepositoryImpl {
                     i.category AS category,
                     i.name AS name,
                     i.description AS description,
+                    i.location AS location,
                     b.author AS "author?",
                     b.isbn AS "isbn?",
                     l.mac_address AS "mac_address?"
@@ -178,6 +190,7 @@ impl ItemRepository for ItemRepositoryImpl {
                     i.category AS category,
                     i.name AS name,
                     i.description AS description,
+                    i.location AS location,
                     b.author AS "author?",
                     b.isbn AS "isbn?",
                     l.mac_address AS "mac_address?"
@@ -204,24 +217,27 @@ impl ItemRepository for ItemRepositoryImpl {
 
     async fn update(&self, event: UpdateItem) -> AppResult<()> {
         let new_category = ItemCategory::from_str(event.as_ref()).unwrap();
-        let (item_id, name, description) = match &event {
+        let (item_id, name, description, location) = match &event {
             UpdateItem::General {
                 item_id,
                 name,
                 description,
-            } => (item_id, name, description),
+                location,
+            } => (item_id, name, description, location),
             UpdateItem::Book {
                 item_id,
                 name,
                 description,
+                location,
                 ..
-            } => (item_id, name, description),
+            } => (item_id, name, description, location),
             UpdateItem::Laptop {
                 item_id,
                 name,
                 description,
+                location,
                 ..
-            } => (item_id, name, description),
+            } => (item_id, name, description, location),
         };
 
         let mut tx = self.db.begin().await?;
@@ -281,11 +297,13 @@ impl ItemRepository for ItemRepositoryImpl {
                 SET
                     name = $1,
                     description = $2,
-                    category = $3
-                WHERE item_id = $4
+                    location = $3,
+                    category = $4
+                WHERE item_id = $5
             "#,
             name,
             description,
+            location.as_deref(),
             new_category.as_ref(),
             item_id.raw(),
         )
@@ -461,6 +479,7 @@ mod tests {
         let create_event = CreateItem::General {
             name: original_name.clone(),
             description: original_description.clone(),
+            location: Some("Shelf A".into()),
         };
         repo.create(create_event).await?;
 
@@ -483,6 +502,7 @@ mod tests {
             id,
             name,
             description,
+            location,
             ..
         }) = res.unwrap()
         else {
@@ -491,6 +511,7 @@ mod tests {
         assert_eq!(id, item_id);
         assert_eq!(name, original_name);
         assert_eq!(description, original_description);
+        assert_eq!(location, Some("Shelf A".into()));
         Ok(())
     }
 
@@ -506,6 +527,7 @@ mod tests {
         let create_event = CreateItem::Book {
             name: original_name.clone(),
             description: original_description.clone(),
+            location: None,
             author: original_author.clone(),
             isbn: original_isbn.clone(),
         };
@@ -532,6 +554,7 @@ mod tests {
         assert_eq!(book.id, item_id);
         assert_eq!(book.name, original_name);
         assert_eq!(book.description, original_description);
+        assert_eq!(book.location, None);
         assert_eq!(book.author, original_author);
         assert_eq!(book.isbn, original_isbn);
         Ok(())
@@ -548,6 +571,7 @@ mod tests {
         let create_event = CreateItem::Laptop {
             name: original_name.clone(),
             description: original_description.clone(),
+            location: None,
             mac_address: original_mac_address,
         };
         repo.create(create_event).await?;
@@ -591,6 +615,7 @@ mod tests {
             item_id: general_item.id,
             name: "Updated Name".into(),
             description: "Updated Description".into(),
+            location: Some("Updated Shelf".into()),
         };
         repo.update(update_event).await?;
 
@@ -600,6 +625,7 @@ mod tests {
         };
         assert_eq!(updated_item.name, "Updated Name");
         assert_eq!(updated_item.description, "Updated Description");
+        assert_eq!(updated_item.location, Some("Updated Shelf".into()));
 
         Ok(())
     }
@@ -620,6 +646,7 @@ mod tests {
                 item_id,
                 name: "Updated Book Name".into(),
                 description: "Updated Book Description".into(),
+                location: Some("Book Shelf".into()),
                 author: "Test Author".into(),
                 isbn: "1234567890123".into(),
             };
@@ -631,6 +658,7 @@ mod tests {
             };
             assert_eq!(book.name, "Updated Book Name");
             assert_eq!(book.description, "Updated Book Description");
+            assert_eq!(book.location, Some("Book Shelf".into()));
             assert_eq!(book.author, "Test Author");
             assert_eq!(book.isbn, "1234567890123");
         }
@@ -647,6 +675,7 @@ mod tests {
                 item_id,
                 name: "Updated Laptop Name".into(),
                 description: "Updated Laptop Description".into(),
+                location: Some("Laptop Locker".into()),
                 mac_address,
             };
             repo.update(update_event).await?;
@@ -657,6 +686,7 @@ mod tests {
             };
             assert_eq!(laptop.name, "Updated Laptop Name");
             assert_eq!(laptop.description, "Updated Laptop Description");
+            assert_eq!(laptop.location, Some("Laptop Locker".into()));
             assert_eq!(laptop.mac_address, mac_address);
         }
 
@@ -671,6 +701,7 @@ mod tests {
                 item_id,
                 name: "Final General Name".into(),
                 description: "Final General Description".into(),
+                location: None,
             };
             repo.update(update_event).await?;
 
@@ -680,6 +711,7 @@ mod tests {
             };
             assert_eq!(general.name, "Final General Name");
             assert_eq!(general.description, "Final General Description");
+            assert_eq!(general.location, None);
         }
 
         Ok(())
@@ -829,6 +861,7 @@ mod tests {
                 item_id: non_existent_id,
                 name: "New Name".into(),
                 description: "New Description".into(),
+                location: None,
             })
             .await;
         assert!(matches!(update_result, Err(AppError::EntityNotFound(_))));
@@ -857,6 +890,7 @@ mod tests {
                 .create(CreateItem::General {
                     name: "Concurrent Item".into(),
                     description: "Description 1".into(),
+                    location: None,
                 })
                 .await
         });
@@ -866,6 +900,7 @@ mod tests {
                 .create(CreateItem::General {
                     name: "Concurrent Item".into(),
                     description: "Description 2".into(),
+                    location: None,
                 })
                 .await
         });

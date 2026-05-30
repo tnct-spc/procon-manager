@@ -11,6 +11,7 @@ pub struct ItemRow {
     pub category: String,
     pub name: String,
     pub description: String,
+    pub location: Option<String>,
     pub author: Option<String>,
     pub isbn: Option<String>,
     pub mac_address: Option<mac_address::MacAddress>,
@@ -23,6 +24,7 @@ impl ItemRow {
                 id: self.item_id,
                 name: self.name,
                 description: self.description,
+                location: self.location,
                 checkout,
             })),
             "book" => Ok(Item::Book(book::Book {
@@ -35,6 +37,7 @@ impl ItemRow {
                     AppError::ConversionEntityError("Book item is missing ISBN".into())
                 })?,
                 description: self.description,
+                location: self.location,
                 checkout,
             })),
             "laptop" => Ok(Item::Laptop(laptop::Laptop {
@@ -44,6 +47,7 @@ impl ItemRow {
                     AppError::ConversionEntityError("Laptop item is missing MAC address".into())
                 })?,
                 description: self.description,
+                location: self.location,
                 checkout,
             })),
             _ => unreachable!("Invalid item category"),

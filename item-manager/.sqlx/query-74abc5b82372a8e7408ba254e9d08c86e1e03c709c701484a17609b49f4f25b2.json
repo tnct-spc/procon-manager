@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT\n                    i.item_id AS item_id,\n                    i.category AS category,\n                    i.name AS name,\n                    i.description AS description,\n                    i.location AS location,\n                    b.author AS \"author?\",\n                    b.isbn AS \"isbn?\",\n                    l.mac_address AS \"mac_address?\"\n                FROM items AS i\n                LEFT JOIN books b ON i.item_id = b.item_id\n                LEFT JOIN laptops l ON i.item_id = l.item_id\n                WHERE i.item_id IN (SELECT * FROM UNNEST($1::uuid[]))\n                ORDER BY i.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "item_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "location",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "author?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "isbn?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "mac_address?",
+        "type_info": "Macaddr"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "74abc5b82372a8e7408ba254e9d08c86e1e03c709c701484a17609b49f4f25b2"
+}

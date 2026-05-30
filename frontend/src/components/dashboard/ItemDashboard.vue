@@ -36,6 +36,7 @@ const getItemSearchText = (item: Item) =>
   [
     item.name,
     item.description,
+    item.location,
     getItemTypeLabel(item),
     getItemDetails(item),
     item.checkout?.checkedOutBy.name,
@@ -246,7 +247,7 @@ onBeforeUnmount(() => {
         v-model="itemSearchQuery"
         :class="$style.searchInput"
         type="search"
-        placeholder="アイテム名、説明、種別、貸出ユーザーで検索"
+        placeholder="アイテム名、説明、場所、種別、貸出ユーザーで検索"
         aria-label="アイテム検索"
       />
       <span :class="$style.searchCount">
@@ -273,6 +274,8 @@ onBeforeUnmount(() => {
           </div>
 
           <p :class="$style.description">{{ item.description }}</p>
+
+          <div v-if="item.location" :class="$style.location">場所: {{ item.location }}</div>
 
           <div v-if="getItemDetails(item)" :class="$style.details">
             {{ getItemDetails(item) }}
@@ -691,6 +694,7 @@ onBeforeUnmount(() => {
   font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
+.location,
 .details {
   font-size: clamp(0.875rem, 2.5vw, 1rem);
   color: var(--color-text);

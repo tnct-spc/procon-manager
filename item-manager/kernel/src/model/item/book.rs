@@ -7,5 +7,6 @@ pub struct Book {
     pub author: String,
     pub isbn: String,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<SimpleCheckout>,
 }

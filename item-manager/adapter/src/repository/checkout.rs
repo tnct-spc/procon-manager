@@ -451,19 +451,19 @@ mod tests {
         let repo = CheckoutRepositoryImpl::new(ConnectionPool::new(pool.clone()));
         let admin_user_id = UserId::from_str("5b4c96ac-316a-4bee-8e69-cac5eb84ff4c")?;
 
-        let rows = sqlx::query!(
+        let item_ids = sqlx::query_scalar::<_, ItemId>(
             r#"
                 SELECT item_id
                 FROM items
                 ORDER BY created_at ASC
                 LIMIT 2;
-            "#
+            "#,
         )
         .fetch_all(&pool)
         .await?;
 
-        let item_id1 = ItemId::from(rows[0].item_id);
-        let item_id2 = ItemId::from(rows[1].item_id);
+        let item_id1 = item_ids[0];
+        let item_id2 = item_ids[1];
 
         let event = CreateCheckout {
             item_id: item_id1,

@@ -47,6 +47,7 @@ async fn list_items_200(
                 isbn: "".into(),
                 author: "Yuki Toyoda".into(),
                 description: "RustによるWebアプリケーション開発".into(),
+                location: Some("Library".into()),
                 checkout: None,
             })];
             Ok(PaginatedList {
@@ -106,6 +107,7 @@ async fn create_item_201(mut fixture_admin: registry::MockAppRegistryExt) -> any
         author: "Test Author".into(),
         isbn: "1234567890123".into(),
         description: "Test Description".into(),
+        location: Some("Shelf A".into()),
     };
 
     let req = Request::post(v1("/items"))
@@ -129,6 +131,7 @@ async fn create_item_403_not_admin(fixture: registry::MockAppRegistryExt) -> any
         author: "Test Author".into(),
         isbn: "1234567890123".into(),
         description: "Test Description".into(),
+        location: None,
     };
 
     let req = Request::post(v1("/items"))
@@ -161,6 +164,7 @@ async fn create_item_400(
         author: author.into(),
         isbn: isbn.into(),
         description: description.into(),
+        location: None,
     };
 
     let req = Request::post(v1("/items"))
@@ -187,6 +191,7 @@ async fn get_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Resu
                 isbn: "1234567890123".into(),
                 author: "Test Author".into(),
                 description: "Test Description".into(),
+                location: Some("Shelf A".into()),
                 checkout: None,
             })))
         });
@@ -209,6 +214,7 @@ async fn get_item_200(mut fixture: registry::MockAppRegistryExt) -> anyhow::Resu
             assert_eq!(book.author, "Test Author");
             assert_eq!(book.isbn, "1234567890123");
             assert_eq!(book.description, "Test Description");
+            assert_eq!(book.location, Some("Shelf A".into()));
         }
         _ => panic!("Expected BookResponse"),
     }
@@ -254,6 +260,7 @@ async fn update_item_200(mut fixture_admin: registry::MockAppRegistryExt) -> any
         author: "Updated Author".into(),
         isbn: "1234567890123".into(),
         description: "Updated Description".into(),
+        location: Some("Updated Shelf".into()),
     };
 
     let req = Request::put(v1(&format!("/items/{item_id}")))
@@ -278,6 +285,7 @@ async fn update_item_403_not_admin(fixture: registry::MockAppRegistryExt) -> any
         author: "Updated Author".into(),
         isbn: "1234567890123".into(),
         description: "Updated Description".into(),
+        location: None,
     };
 
     let req = Request::put(v1(&format!("/items/{item_id}")))
@@ -311,6 +319,7 @@ async fn update_item_400(
         author: author.into(),
         isbn: isbn.into(),
         description: description.into(),
+        location: None,
     };
 
     let req = Request::put(v1(&format!("/items/{item_id}")))
@@ -533,6 +542,7 @@ async fn checkout_history_200(mut fixture: registry::MockAppRegistryExt) -> anyh
                 isbn: "1234567890123".into(),
                 author: "Test Author".into(),
                 description: "Test Description".into(),
+                location: None,
                 checkout: None,
             })))
         });

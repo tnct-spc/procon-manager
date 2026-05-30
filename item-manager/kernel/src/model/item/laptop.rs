@@ -6,5 +6,6 @@ pub struct Laptop {
     pub name: String,
     pub mac_address: mac_address::MacAddress,
     pub description: String,
+    pub location: Option<String>,
     pub checkout: Option<SimpleCheckout>,
 }

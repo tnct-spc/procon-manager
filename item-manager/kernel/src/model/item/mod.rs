@@ -31,17 +31,20 @@ pub enum CreateItem {
     General {
         name: String,
         description: String,
+        location: Option<String>,
     },
     Book {
         name: String,
         author: String,
         isbn: String,
         description: String,
+        location: Option<String>,
     },
     Laptop {
         name: String,
         mac_address: mac_address::MacAddress,
         description: String,
+        location: Option<String>,
     },
 }
 
@@ -52,6 +55,7 @@ pub enum UpdateItem {
         item_id: ItemId,
         name: String,
         description: String,
+        location: Option<String>,
     },
     Book {
         item_id: ItemId,
@@ -59,12 +63,14 @@ pub enum UpdateItem {
         author: String,
         isbn: String,
         description: String,
+        location: Option<String>,
     },
     Laptop {
         item_id: ItemId,
         name: String,
         mac_address: mac_address::MacAddress,
         description: String,
+        location: Option<String>,
     },
 }
 

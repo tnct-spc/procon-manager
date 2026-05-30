@@ -13,6 +13,7 @@ const formData = ref({
   category: 'general' as 'general' | 'book' | 'laptop',
   name: '',
   description: '',
+  location: '',
   author: '',
   isbn: '',
   macAddress: '',
@@ -32,19 +33,26 @@ const isFormValid = computed(() => {
 const handleSubmit = async () => {
   if (!isFormValid.value) return
 
-  const { category, name, description, author, isbn, macAddress } = formData.value
+  const { category, name, description, location, author, isbn, macAddress } = formData.value
+  const normalizedLocation = location.trim() || null
 
   let itemData: CreateItemRequest
 
   switch (category) {
     case 'book':
-      itemData = { category, name, description, author, isbn }
+      itemData = { category, name, description, location: normalizedLocation, author, isbn }
       break
     case 'laptop':
-      itemData = { category, name, description, mac_address: macAddress }
+      itemData = {
+        category,
+        name,
+        description,
+        location: normalizedLocation,
+        mac_address: macAddress,
+      }
       break
     default:
-      itemData = { category: 'general', name, description }
+      itemData = { category: 'general', name, description, location: normalizedLocation }
   }
 
   try {
@@ -61,6 +69,7 @@ const resetForm = () => {
     category: 'general',
     name: '',
     description: '',
+    location: '',
     author: '',
     isbn: '',
     macAddress: '',
@@ -105,6 +114,18 @@ const handleCancel = () => {
             :class="$style.textarea"
             rows="3"
           ></textarea>
+        </div>
+
+        <div :class="$style.field">
+          <label for="location">場所</label>
+          <input
+            id="location"
+            v-model="formData.location"
+            type="text"
+            maxlength="255"
+            placeholder="例: 棚A-3"
+            :class="$style.input"
+          />
         </div>
 
         <div v-if="formData.category === 'book'" :class="$style.categoryFields">
